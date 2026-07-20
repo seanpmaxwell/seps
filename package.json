@@ -1,0 +1,32 @@
+{
+  "name": "seps",
+  "version": "0.1.0",
+  "description": "Format separator/header comment markers so labels are centered and lines are a fixed width.",
+  "type": "module",
+  "bin": {
+    "seps": "bin/cli.js"
+  },
+  "main": "src/main.js",
+  "exports": {
+    ".": "./src/main.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "start": "node bin/cli.js"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "keywords": [
+    "cli",
+    "formatter",
+    "comments",
+    "separators",
+    "headers"
+  ],
+  "license": "MIT"
+}
