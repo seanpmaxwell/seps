@@ -48,7 +48,7 @@ function insertSeparators(targetPath, { dryRun = false, log = console.log } = {}
     const entries = fs.readdirSync(targetPath, { withFileTypes: true });
     for (const entry of entries) {
       if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
-      updated.push(...processPath(path.join(targetPath, entry.name), { dryRun, log }));
+      updated.push(...insertSeparators(path.join(targetPath, entry.name), { dryRun, log }));
     }
     return updated;
   }
@@ -130,6 +130,8 @@ function formatRegion(label, indent) {
   return [rule, middle, rule].join('\n');
 }
 
-// r~~ Export
+// ================================================================================================================= //
+//                                                      Export                                                       //
+// ================================================================================================================= //
 
 export default insertSeparators;

@@ -19,8 +19,10 @@ const HELP = `seps - format separator/header comment markers
     -v, --version    Show the version.
 
   Markers (rewritten in place, centered to a fixed width):
-    // r~~ Label     Region  -> a 3-line boxed header block.
-    // s~~ Label     Section -> a single centered header line.
+    // ============================================================================================================= //
+    //                               Label     Region  -> a 3-line boxed header block.                               //
+    // ============================================================================================================= //
+    // ============================ Label     Section -> a single centered header line. ============================ //
 
   Supported files: .js .jsx .ts .tsx .mjs .java
 `;

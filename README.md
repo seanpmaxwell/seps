@@ -48,9 +48,9 @@ Supported files: `.js` `.jsx` `.ts` `.tsx` `.mjs` `.java`
 ## Programmatic use
 
 ```js
-import { processPath, formatHeaders, PaddingParams } from 'seps';
+import { insertSeparators, formatHeaders, PaddingParams } from 'seps';
 
-processPath('src', { dryRun: true });
+insertSeparators('src', { dryRun: true });
 ```
 
 ## License
