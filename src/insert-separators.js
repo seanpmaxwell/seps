@@ -15,21 +15,22 @@ const DefaultConfig = {
   All: {
     Markers: ['@reg', '@sec'],
     TotalLength: 79,
+    FillerCharacter: '=',
   },
   Js: {
-    EXTENSIONS: ['ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs'],
-    COMMENT: ['// ', ''],
-    BOOKENDS: ['// ', ' //'],
+    Extensions: ['ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs'],
+    Comment: ['// ', ''],
+    Bookends: ['// ', ' //'],
   },
   Java: {
-    EXTENSIONS: ['java'],
-    COMMENT: ['/* ', ' */'],
-    BOOKENDS: ['// ', ' //'],
+    Extensions: ['java'],
+    Comment: ['/* ', ' */'],
+    Bookends: ['// ', ' //'],
   },
   Css: {
-    EXTENSIONS: ['css', 'scss'],
-    COMMENT: ['/* ', ' */'],
-    BOOKENDS: ['/* ', ' */'],
+    Extensions: ['css', 'scss'],
+    Comment: ['/* ', ' */'],
+    Bookends: ['/* ', ' */'],
   },
 };
 
@@ -100,8 +101,9 @@ function loadConfig(cwd, log = console.log) {
       cause: err,
     });
   }
-  // "All" holds settings shared by every language (Markers, TotalLength);
-  // per-language values still win over them. Every other key is a language.
+  // "All" holds settings shared by every language (Markers, TotalLength,
+  // FillerCharacter); per-language values still win over them. Every other
+  // key is a language.
   const { All: allOverrides, ...langOverrides } = overrides;
   const config = { All: { ...DefaultConfig.All, ...allOverrides } };
   const defaultLangs = Object.keys(DefaultConfig).filter(key => key !== 'All');
@@ -118,20 +120,27 @@ function loadConfig(cwd, log = console.log) {
 /**
  * Compile a declarative language entry into the matchers used while walking:
  * a FILE_EXT regex and REGION/SECTION marker regexes built from the comment
- * syntax around the marker tokens. Markers/TotalLength fall back to the
- * shared "All" settings.
+ * syntax around the marker tokens. Markers/TotalLength/FillerCharacter fall
+ * back to the shared "All" settings.
  */
 function compileEntry(lang, entry, all) {
-  const { EXTENSIONS, COMMENT, BOOKENDS, Markers, TotalLength } = entry;
-  if (!Array.isArray(EXTENSIONS) || EXTENSIONS.length === 0) {
+  const {
+    Extensions,
+    Comment,
+    Bookends,
+    Markers,
+    TotalLength,
+    FillerCharacter,
+  } = entry;
+  if (!Array.isArray(Extensions) || Extensions.length === 0) {
     throw new Error(
-      `invalid ${CONFIG_FILE_NAME}: "${lang}" needs an EXTENSIONS array, e.g. ["py"]`,
+      `invalid ${CONFIG_FILE_NAME}: "${lang}" needs an Extensions array, e.g. ["py"]`,
     );
   }
-  const [open, close] = Array.isArray(COMMENT) ? COMMENT : [];
+  const [open, close] = Array.isArray(Comment) ? Comment : [];
   if (typeof open !== 'string' || typeof close !== 'string') {
     throw new Error(
-      `invalid ${CONFIG_FILE_NAME}: "${lang}" needs a COMMENT pair, e.g. ["# ", ""]`,
+      `invalid ${CONFIG_FILE_NAME}: "${lang}" needs a Comment pair, e.g. ["# ", ""]`,
     );
   }
   const [regionToken, sectionToken] = Markers ?? all.Markers ?? [];
@@ -148,11 +157,17 @@ function compileEntry(lang, entry, all) {
   const totalLen = TotalLength ?? all.TotalLength;
   if (!Number.isInteger(totalLen) || totalLen < 1) {
     throw new Error(
-      `invalid ${CONFIG_FILE_NAME}: "${lang}" TotalLength must be a positive integer, e.g. 119`,
+      `invalid ${CONFIG_FILE_NAME}: "${lang}" TotalLength must be a positive integer, e.g. 79`,
+    );
+  }
+  const filler = FillerCharacter ?? all.FillerCharacter;
+  if (typeof filler !== 'string' || filler.length !== 1) {
+    throw new Error(
+      `invalid ${CONFIG_FILE_NAME}: "${lang}" FillerCharacter must be a single character, e.g. "="`,
     );
   }
   //
-  const exts = EXTENSIONS.map(ext => escapeRegex(ext.replace(/^\./, '')));
+  const exts = Extensions.map(ext => escapeRegex(ext.replace(/^\./, '')));
   const marker = token =>
     new RegExp(
       `^\\s*${escapeRegex(open)}${escapeRegex(token)} (.+?)${escapeRegex(close)}\\s*$`,
@@ -162,8 +177,9 @@ function compileEntry(lang, entry, all) {
     FILE_EXT: new RegExp(`\\.(${exts.join('|')})$`),
     REGION_MARKER: marker(regionToken),
     SECTION_MARKER: marker(sectionToken),
-    BOOKENDS: BOOKENDS ?? (close ? [open, close] : [open, ` ${open.trim()}`]),
+    BOOKENDS: Bookends ?? (close ? [open, close] : [open, ` ${open.trim()}`]),
     TOTAL_LEN: totalLen,
+    FILLER: filler,
   };
 }
 
@@ -250,11 +266,12 @@ function formatHeaders(text, paddingType) {
  */
 function formatSection(label, paddingType, indent) {
   const [open, close] = paddingType.BOOKENDS;
+  const filler = paddingType.FILLER;
   const lineLen = paddingType.TOTAL_LEN - indent.length;
   const available = lineLen - open.length - close.length - label.length - 2;
   const left = Math.max(Math.ceil(available / 2), 0);
   const right = Math.max(Math.floor(available / 2), 0);
-  return `${indent}${open}${'='.repeat(left)} ${label} ${'='.repeat(right)}${close}`;
+  return `${indent}${open}${filler.repeat(left)} ${label} ${filler.repeat(right)}${close}`;
 }
 
 /**
@@ -265,7 +282,7 @@ function formatRegion(label, paddingType, indent) {
   const [open, close] = paddingType.BOOKENDS;
   const lineLen = paddingType.TOTAL_LEN - indent.length;
   const inner = lineLen - open.length - close.length;
-  const rule = indent + open + '='.repeat(inner) + close;
+  const rule = indent + open + paddingType.FILLER.repeat(inner) + close;
   const leftPad = Math.max(Math.floor((inner - label.length) / 2), 0);
   const rightPad = Math.max(inner - label.length - leftPad, 0);
   const middle =

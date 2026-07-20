@@ -43,7 +43,8 @@ becomes:
 // ========================================================================= //
 ```
 
-Supported files: `.js` `.jsx` `.ts` `.tsx` `.mjs` `.java`
+Supported files: `.js` `.jsx` `.ts` `.tsx` `.mjs` `.cjs` `.java` `.css`
+`.scss` — and any others you add via configuration.
 
 ## Configuration
 
@@ -58,48 +59,51 @@ defaults; everything else keeps its default.
 The `All` key holds settings shared by every language. Every other top-level
 key is a language — unknown keys define new languages.
 
-| `All` field   | Meaning                                                            |
-| ------------- | ------------------------------------------------------------------ |
-| `Markers`     | `[region, section]` marker tokens. Defaults to `["@reg", "@sec"]`. |
-| `TotalLength` | Width of generated header lines in characters. Defaults to `79`.   |
+| `All` field       | Meaning                                                            |
+| ----------------- | ------------------------------------------------------------------ |
+| `Markers`         | `[region, section]` marker tokens. Defaults to `["@reg", "@sec"]`. |
+| `TotalLength`     | Width of generated header lines in characters. Defaults to `79`.   |
+| `FillerCharacter` | Character the header lines are padded with. Defaults to `"="`.     |
 
 Each language entry declares how comments are written — `seps` builds the
 marker matching itself, no regexes needed:
 
-| Language field | Meaning                                                                         |
-| -------------- | ------------------------------------------------------------------------------- |
-| `EXTENSIONS`   | File extensions to match, e.g. `["py"]`.                                        |
-| `COMMENT`      | Comment open/close the markers are written in; close is `""` for line comments. |
-| `BOOKENDS`     | Optional. Start/end of generated header lines. Defaults to the comment syntax.  |
-| `Markers`      | Optional. Overrides `All.Markers` for this language.                            |
-| `TotalLength`  | Optional. Overrides `All.TotalLength` for this language.                        |
+| Language field    | Meaning                                                                         |
+| ----------------- | ------------------------------------------------------------------------------- |
+| `Extensions`      | File extensions to match, e.g. `["py"]`.                                        |
+| `Comment`         | Comment open/close the markers are written in; close is `""` for line comments. |
+| `Bookends`        | Optional. Start/end of generated header lines. Defaults to the comment syntax.  |
+| `Markers`         | Optional. Overrides `All.Markers` for this language.                            |
+| `TotalLength`     | Optional. Overrides `All.TotalLength` for this language.                        |
+| `FillerCharacter` | Optional. Overrides `All.FillerCharacter` for this language.                    |
 
 ```json
 {
   "All": {
     "Markers": ["@region", "@section"],
-    "TotalLength": 100
+    "TotalLength": 100,
+    "FillerCharacter": "-"
   },
   "Java": {
-    "BOOKENDS": ["/* ", " */"]
+    "Bookends": ["/* ", " */"]
   },
   "Python": {
-    "EXTENSIONS": ["py"],
-    "COMMENT": ["# ", ""]
+    "Extensions": ["py"],
+    "Comment": ["# ", ""]
   }
 }
 ```
 
-With that config, `# @region Label` in a `.py` file becomes a `# ==== #` boxed
+With that config, `# @region Label` in a `.py` file becomes a `# ---- #` boxed
 header block 100 characters wide.
 
 Built-in languages and their defaults:
 
-| Key    | Files                    | Markers written as | Bookends      |
-| ------ | ------------------------ | ------------------ | ------------- |
-| `Js`   | `.js .jsx .ts .tsx .mjs` | `// @reg Label`    | `// ` … ` //` |
-| `Java` | `.java`                  | `/* @reg Label */` | `// ` … ` //` |
-| `Css`  | `.css .scss`             | `/* @reg Label */` | `/* ` … ` */` |
+| Key    | Files                         | Markers written as | Bookends      |
+| ------ | ----------------------------- | ------------------ | ------------- |
+| `Js`   | `.js .jsx .ts .tsx .mjs .cjs` | `// @reg Label`    | `// ` … ` //` |
+| `Java` | `.java`                       | `/* @reg Label */` | `// ` … ` //` |
+| `Css`  | `.css .scss`                  | `/* @reg Label */` | `/* ` … ` */` |
 
 Rather than writing the file from scratch, you can generate one pre-filled
 with all the default settings and edit from there:
