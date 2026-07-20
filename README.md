@@ -26,51 +26,60 @@ Write a marker on its own line and `seps` rewrites it in place:
 
 | Marker           | Result                                        |
 | ---------------- | --------------------------------------------- |
-| `// r~~ Label`   | **Region** — a 3-line boxed header block.     |
-| `// s~~ Label`   | **Section** — a single centered header line.  |
+| `// @reg Label`  | **Region** — a 3-line boxed header block.     |
+| `// @sec Label`  | **Section** — a single centered header line.  |
 
 For example, this:
 
 ```js
-// r~~ Functions
+// @reg Functions
 ```
 
 becomes:
 
 ```js
-// ================================================================================================================= //
-//                                                     Functions                                                     //
-// ================================================================================================================= //
+// ========================================================================= //
+//                                 Functions                                 //
+// ========================================================================= //
 ```
 
 Supported files: `.js` `.jsx` `.ts` `.tsx` `.mjs` `.java`
 
 ## Configuration
 
-`seps` looks for a `seps-config.json` file in the target path's directory
-first, then falls back to the directory it is run from (nearest wins — the two
-are not merged). Any values in it override the corresponding values in the
-built-in `DefaultConfig`; everything else keeps its default. Unknown top-level
-keys define new languages.
+`seps` works out of the box — you only need a config file if you want to
+override the default settings.
+
+To do so, add a `seps-config.json`. `seps` looks for it in the target path's
+directory first, then falls back to the directory it is run from (nearest wins
+— the two are not merged). Any values in it override the corresponding
+defaults; everything else keeps its default.
+
+The `All` key holds settings shared by every language. Every other top-level
+key is a language — unknown keys define new languages.
+
+| `All` field   | Meaning                                                                    |
+| ------------- | -------------------------------------------------------------------------- |
+| `Markers`     | `[region, section]` marker tokens. Defaults to `["@reg", "@sec"]`.         |
+| `TotalLength` | Width of generated header lines in characters. Defaults to `79`.           |
 
 Each language entry declares how comments are written — `seps` builds the
-marker matching around `r~~` / `s~~` itself, no regexes needed:
+marker matching itself, no regexes needed:
 
-| Field        | Meaning                                                                              |
-| ------------ | ------------------------------------------------------------------------------------ |
-| `EXTENSIONS` | File extensions to match, e.g. `["py"]`.                                             |
-| `COMMENT`    | Comment open/close the markers are written in; close is `""` for line comments.      |
-| `BOOKENDS`   | Optional. Start/end of generated header lines. Defaults to the comment syntax.       |
-| `MARKERS`    | Optional. `[region, section]` marker tokens. Defaults to `["r~~", "s~~"]`.           |
-| `TOTAL_LEN`  | Optional. Width of generated header lines in characters. Defaults to `119`.          |
-
-`MARKERS` and `TOTAL_LEN` can also be set at the top level of the config to
-apply to every language at once (per-language values still win over them):
+| Language field | Meaning                                                                            |
+| -------------- | ---------------------------------------------------------------------------------- |
+| `EXTENSIONS`   | File extensions to match, e.g. `["py"]`.                                           |
+| `COMMENT`      | Comment open/close the markers are written in; close is `""` for line comments.    |
+| `BOOKENDS`     | Optional. Start/end of generated header lines. Defaults to the comment syntax.     |
+| `Markers`      | Optional. Overrides `All.Markers` for this language.                               |
+| `TotalLength`  | Optional. Overrides `All.TotalLength` for this language.                           |
 
 ```json
 {
-  "MARKERS": ["@region", "@section"],
-  "TOTAL_LEN": 100,
+  "All": {
+    "Markers": ["@region", "@section"],
+    "TotalLength": 100
+  },
   "Java": {
     "BOOKENDS": ["/* ", " */"]
   },
@@ -81,16 +90,26 @@ apply to every language at once (per-language values still win over them):
 }
 ```
 
-With that config, `# r~~ Label` in a `.py` file becomes a `# ==== #` boxed
-header block.
+With that config, `# @region Label` in a `.py` file becomes a `# ==== #` boxed
+header block 100 characters wide.
 
 Built-in languages and their defaults:
 
 | Key    | Files                     | Markers written as  | Bookends       |
 | ------ | ------------------------- | ------------------- | -------------- |
-| `Js`   | `.js .jsx .ts .tsx .mjs`  | `// r~~ Label`      | `// ` … ` //`  |
-| `Java` | `.java`                   | `/* r~~ Label */`   | `// ` … ` //`  |
-| `Css`  | `.css .scss`              | `/* r~~ Label */`   | `/* ` … ` */`  |
+| `Js`   | `.js .jsx .ts .tsx .mjs`  | `// @reg Label`     | `// ` … ` //`  |
+| `Java` | `.java`                   | `/* @reg Label */`  | `// ` … ` //`  |
+| `Css`  | `.css .scss`              | `/* @reg Label */`  | `/* ` … ` */`  |
+
+Rather than writing the file from scratch, you can generate one pre-filled
+with all the default settings and edit from there:
+
+```bash
+npx seps init
+```
+
+This writes a `seps-config.json` to the current directory (it refuses to
+overwrite an existing one).
 
 ## Programmatic use
 

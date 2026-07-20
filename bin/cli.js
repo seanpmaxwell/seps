@@ -1,12 +1,17 @@
 #!/usr/bin/env node
 /* eslint-disable no-undef */
 
-import insertSeparators from '../src/insert-separators.js';
+import insertSeparators, { initConfig } from '../src/insert-separators.js';
 
 const HELP = `seps - format separator/header comment markers
 
   Usage:
     seps [options] [paths...]
+    seps init
+
+  Commands:
+    init             Generate a seps-config.json in the current directory
+                    containing all the default settings.
 
   Arguments:
     paths            Files or directories to process (default: current directory).
@@ -19,12 +24,10 @@ const HELP = `seps - format separator/header comment markers
     -v, --version    Show the version.
 
   Markers (rewritten in place, centered to a fixed width):
-    // ============================================================================================================= //
-    //                               Label     Region  -> a 3-line boxed header block.                               //
-    // ============================================================================================================= //
-    // ============================ Label     Section -> a single centered header line. ============================ //
+    "// @reg Label"  Region  -> a 3-line boxed header block.
+    "// @sec Label"  Section -> a single centered header line.
 
-  Supported files: .js .jsx .ts .tsx .mjs .java
+  Supported files: .js .jsx .ts .tsx .mjs .java (more via seps-config.json)
 `;
 
 main();
@@ -35,6 +38,16 @@ main();
  */
 async function main() {
   const args = process.argv.slice(2);
+  // "seps init" generates a default config file instead of processing paths
+  if (args[0] === 'init') {
+    try {
+      process.stdout.write(`seps: created ${initConfig()}\n`);
+    } catch (err) {
+      process.stderr.write(`seps: ${err.message}\n`);
+      process.exitCode = 1;
+    }
+    return;
+  }
   const paths = [];
   let dryRun = false;
   // Process command line arguments

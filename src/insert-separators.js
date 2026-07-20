@@ -7,19 +7,17 @@ import path from 'path';
 //                                  Constants                                //
 // ========================================================================= //
 
-// Default width of generated header lines. Overridable via TOTAL_LEN in config.
-const DEFAULT_TOTAL_LEN = 119;
 const CONFIG_FILE_NAME = 'seps-config.json';
-
-// Default [region, section] marker tokens written in source files:
-// "// r~~ Label", "/* s~~ Label */", ... Overridable via MARKERS in config.
-const DEFAULT_MARKERS = ['r~~', 's~~'];
 
 // Each language declares its file extensions, the comment syntax markers are
 // written in (open/close, close empty for line comments), and the bookends
 // used for the generated header lines (defaults to the comment syntax). The
 // marker regexes are built from these — no regexes in config files.
 const DefaultConfig = {
+  All: {
+    Markers: ['@reg', '@sec'],
+    TotalLength: 79,
+  },
   Js: {
     EXTENSIONS: ['ts', 'tsx', 'js', 'jsx', 'mjs'],
     COMMENT: ['// ', ''],
@@ -46,9 +44,23 @@ const DefaultConfig = {
  * Returns the list of file paths that were updated.
  */
 function insertSeparators(targetPath, { dryRun = false, log = console.log } = {}) {
-  const config = loadConfig(configDirFor(targetPath), log);
-  const paddingTypes = Object.entries(config).map(([lang, entry]) => compileEntry(lang, entry));
+  const { All, ...languages } = loadConfig(configDirFor(targetPath), log);
+  const paddingTypes = Object.entries(languages).map(([lang, entry]) => compileEntry(lang, entry, All));
   return walk(targetPath, paddingTypes, { dryRun, log });
+}
+
+/**
+ * Generate a seps-config.json in the given directory (default: the directory
+ * seps is being run from) containing all the default settings. Refuses to
+ * overwrite an existing config. Returns the path of the written file.
+ */
+function initConfig(dir = process.cwd()) {
+  const configPath = path.join(dir, CONFIG_FILE_NAME);
+  if (fs.existsSync(configPath)) {
+    throw new Error(`${CONFIG_FILE_NAME} already exists here, not overwriting`);
+  }
+  fs.writeFileSync(configPath, `${JSON.stringify(DefaultConfig, null, 2)}\n`, 'utf8');
+  return configPath;
 }
 
 /**
@@ -75,18 +87,13 @@ function loadConfig(cwd, log = console.log) {
   } catch (err) {
     throw new Error(`invalid ${CONFIG_FILE_NAME}: ${err.message}`);
   }
-  //
-  // Top-level MARKERS / TOTAL_LEN apply to every language; per-language values
-  // still win over them.
-  const { MARKERS: globalMarkers, TOTAL_LEN: globalTotalLen, ...langOverrides } = overrides;
-  const config = {};
-  for (const lang of new Set([...Object.keys(DefaultConfig), ...Object.keys(langOverrides)])) {
-    config[lang] = {
-      ...DefaultConfig[lang],
-      ...(globalMarkers ? { MARKERS: globalMarkers } : {}),
-      ...(globalTotalLen !== undefined ? { TOTAL_LEN: globalTotalLen } : {}),
-      ...langOverrides[lang],
-    };
+  // "All" holds settings shared by every language (Markers, TotalLength);
+  // per-language values still win over them. Every other key is a language.
+  const { All: allOverrides, ...langOverrides } = overrides;
+  const config = { All: { ...DefaultConfig.All, ...allOverrides } };
+  const defaultLangs = Object.keys(DefaultConfig).filter(key => key !== 'All');
+  for (const lang of new Set([...defaultLangs, ...Object.keys(langOverrides)])) {
+    config[lang] = { ...DefaultConfig[lang], ...langOverrides[lang] };
   }
   if (log) log(`Using config overrides from: ${configPath}`);
   return config;
@@ -95,10 +102,11 @@ function loadConfig(cwd, log = console.log) {
 /**
  * Compile a declarative language entry into the matchers used while walking:
  * a FILE_EXT regex and REGION/SECTION marker regexes built from the comment
- * syntax around the r~~ / s~~ tokens.
+ * syntax around the marker tokens. Markers/TotalLength fall back to the
+ * shared "All" settings.
  */
-function compileEntry(lang, entry) {
-  const { EXTENSIONS, COMMENT, BOOKENDS, MARKERS, TOTAL_LEN } = entry;
+function compileEntry(lang, entry, all) {
+  const { EXTENSIONS, COMMENT, BOOKENDS, Markers, TotalLength } = entry;
   if (!Array.isArray(EXTENSIONS) || EXTENSIONS.length === 0) {
     throw new Error(`invalid ${CONFIG_FILE_NAME}: "${lang}" needs an EXTENSIONS array, e.g. ["py"]`);
   }
@@ -106,13 +114,13 @@ function compileEntry(lang, entry) {
   if (typeof open !== 'string' || typeof close !== 'string') {
     throw new Error(`invalid ${CONFIG_FILE_NAME}: "${lang}" needs a COMMENT pair, e.g. ["# ", ""]`);
   }
-  const [regionToken, sectionToken] = MARKERS ?? DEFAULT_MARKERS;
+  const [regionToken, sectionToken] = Markers ?? all.Markers ?? [];
   if (typeof regionToken !== 'string' || !regionToken || typeof sectionToken !== 'string' || !sectionToken) {
-    throw new Error(`invalid ${CONFIG_FILE_NAME}: "${lang}" MARKERS must be a [region, section] pair, e.g. ["r~~", "s~~"]`);
+    throw new Error(`invalid ${CONFIG_FILE_NAME}: "${lang}" Markers must be a [region, section] pair, e.g. ["@reg", "@sec"]`);
   }
-  const totalLen = TOTAL_LEN ?? DEFAULT_TOTAL_LEN;
+  const totalLen = TotalLength ?? all.TotalLength;
   if (!Number.isInteger(totalLen) || totalLen < 1) {
-    throw new Error(`invalid ${CONFIG_FILE_NAME}: "${lang}" TOTAL_LEN must be a positive integer, e.g. 119`);
+    throw new Error(`invalid ${CONFIG_FILE_NAME}: "${lang}" TotalLength must be a positive integer, e.g. 119`);
   }
   //
   const exts = EXTENSIONS.map(ext => escapeRegex(ext.replace(/^\./, '')));
@@ -168,13 +176,13 @@ function walk(targetPath, paddingTypes, { dryRun, log }) {
  * Format header markers so the label is centered and the result is exactly
  * {TOTAL_LEN} characters wide. Two kinds are supported:
  *
- * Region ("// r~~ someText") -> a 3-line block:
+ * Region ("// @reg someText") -> a 3-line block:
  *
  * // ====================================================================== //
  * //                                  someText                              //
  * // ====================================================================== //
  *
- * Section ("// s~~ someText") -> a single line:
+ * Section ("// @sec someText") -> a single line:
  *
  * // ==================== someText ===================== //
  */
@@ -225,3 +233,4 @@ function formatRegion(label, paddingType, indent) {
 // ================================================================================================================= //
 
 export default insertSeparators;
+export { initConfig };
