@@ -7,30 +7,35 @@ import path from 'path';
 //                                  Constants                                //
 // ========================================================================= //
 
-const TOTAL_LEN = 119;
+// Default width of generated header lines. Overridable via TOTAL_LEN in config.
+const DEFAULT_TOTAL_LEN = 119;
+const CONFIG_FILE_NAME = 'seps-config.json';
 
-export const PaddingParams = {
+// Default [region, section] marker tokens written in source files:
+// "// r~~ Label", "/* s~~ Label */", ... Overridable via MARKERS in config.
+const DEFAULT_MARKERS = ['r~~', 's~~'];
+
+// Each language declares its file extensions, the comment syntax markers are
+// written in (open/close, close empty for line comments), and the bookends
+// used for the generated header lines (defaults to the comment syntax). The
+// marker regexes are built from these — no regexes in config files.
+const DefaultConfig = {
   Js: {
-    FILE_EXT: /\.(ts|tsx|js|jsx|mjs)$/,
-    REGION_MARKER: /^\s*\/\/ r~~ (.+)/,
-    SECTION_MARKER: /^\s*\/\/ s~~ (.+)/,
+    EXTENSIONS: ['ts', 'tsx', 'js', 'jsx', 'mjs'],
+    COMMENT: ['// ', ''],
     BOOKENDS: ['// ', ' //'],
   },
   Java: {
-    FILE_EXT: /\.(java)$/,
-    REGION_MARKER: /^\s*\/\* r~~ (.+?) \*\/\s*$/,
-    SECTION_MARKER: /^\s*\/\* s~~ (.+?) \*\/\s*$/,
+    EXTENSIONS: ['java'],
+    COMMENT: ['/* ', ' */'],
     BOOKENDS: ['// ', ' //'],
   },
-  Java: {
-    FILE_EXT: /\.(java)$/,
-    REGION_MARKER: /^\s*\/\* r~~ (.+?) \*\/\s*$/,
-    SECTION_MARKER: /^\s*\/\* s~~ (.+?) \*\/\s*$/,
-    BOOKENDS: ['// ', ' //'],
+  Css: {
+    EXTENSIONS: ['css', 'scss'],
+    COMMENT: ['/* ', ' */'],
+    BOOKENDS: ['/* ', ' */'],
   },
 };
-
-const PADDING_TYPES = Object.values(PaddingParams);
 
 // ========================================================================= //
 //                                  Functions                                //
@@ -41,19 +46,112 @@ const PADDING_TYPES = Object.values(PaddingParams);
  * Returns the list of file paths that were updated.
  */
 function insertSeparators(targetPath, { dryRun = false, log = console.log } = {}) {
+  const config = loadConfig(configDirFor(targetPath), log);
+  const paddingTypes = Object.entries(config).map(([lang, entry]) => compileEntry(lang, entry));
+  return walk(targetPath, paddingTypes, { dryRun, log });
+}
+
+/**
+ * Directory whose seps-config.json applies to a target path: the target's own
+ * directory if it has one, otherwise the directory seps is being run from.
+ */
+function configDirFor(targetPath) {
+  const targetDir = fs.statSync(targetPath).isDirectory() ? targetPath : path.dirname(targetPath);
+  return fs.existsSync(path.join(targetDir, CONFIG_FILE_NAME)) ? targetDir : process.cwd();
+}
+
+/**
+ * Resolve the effective config: DefaultConfig, overridden per-language by any
+ * seps-config.json found in the config directory. Unknown language keys in the
+ * JSON define new languages.
+ */
+function loadConfig(cwd, log = console.log) {
+  const configPath = path.join(cwd, CONFIG_FILE_NAME);
+  if (!fs.existsSync(configPath)) return DefaultConfig;
+  //
+  let overrides;
+  try {
+    overrides = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  } catch (err) {
+    throw new Error(`invalid ${CONFIG_FILE_NAME}: ${err.message}`);
+  }
+  //
+  // Top-level MARKERS / TOTAL_LEN apply to every language; per-language values
+  // still win over them.
+  const { MARKERS: globalMarkers, TOTAL_LEN: globalTotalLen, ...langOverrides } = overrides;
+  const config = {};
+  for (const lang of new Set([...Object.keys(DefaultConfig), ...Object.keys(langOverrides)])) {
+    config[lang] = {
+      ...DefaultConfig[lang],
+      ...(globalMarkers ? { MARKERS: globalMarkers } : {}),
+      ...(globalTotalLen !== undefined ? { TOTAL_LEN: globalTotalLen } : {}),
+      ...langOverrides[lang],
+    };
+  }
+  if (log) log(`Using config overrides from: ${configPath}`);
+  return config;
+}
+
+/**
+ * Compile a declarative language entry into the matchers used while walking:
+ * a FILE_EXT regex and REGION/SECTION marker regexes built from the comment
+ * syntax around the r~~ / s~~ tokens.
+ */
+function compileEntry(lang, entry) {
+  const { EXTENSIONS, COMMENT, BOOKENDS, MARKERS, TOTAL_LEN } = entry;
+  if (!Array.isArray(EXTENSIONS) || EXTENSIONS.length === 0) {
+    throw new Error(`invalid ${CONFIG_FILE_NAME}: "${lang}" needs an EXTENSIONS array, e.g. ["py"]`);
+  }
+  const [open, close] = Array.isArray(COMMENT) ? COMMENT : [];
+  if (typeof open !== 'string' || typeof close !== 'string') {
+    throw new Error(`invalid ${CONFIG_FILE_NAME}: "${lang}" needs a COMMENT pair, e.g. ["# ", ""]`);
+  }
+  const [regionToken, sectionToken] = MARKERS ?? DEFAULT_MARKERS;
+  if (typeof regionToken !== 'string' || !regionToken || typeof sectionToken !== 'string' || !sectionToken) {
+    throw new Error(`invalid ${CONFIG_FILE_NAME}: "${lang}" MARKERS must be a [region, section] pair, e.g. ["r~~", "s~~"]`);
+  }
+  const totalLen = TOTAL_LEN ?? DEFAULT_TOTAL_LEN;
+  if (!Number.isInteger(totalLen) || totalLen < 1) {
+    throw new Error(`invalid ${CONFIG_FILE_NAME}: "${lang}" TOTAL_LEN must be a positive integer, e.g. 119`);
+  }
+  //
+  const exts = EXTENSIONS.map(ext => escapeRegex(ext.replace(/^\./, '')));
+  const marker = token =>
+    new RegExp(`^\\s*${escapeRegex(open)}${escapeRegex(token)} (.+?)${escapeRegex(close)}\\s*$`);
+  //
+  return {
+    FILE_EXT: new RegExp(`\\.(${exts.join('|')})$`),
+    REGION_MARKER: marker(regionToken),
+    SECTION_MARKER: marker(sectionToken),
+    BOOKENDS: BOOKENDS ?? (close ? [open, close] : [open, ` ${open.trim()}`]),
+    TOTAL_LEN: totalLen,
+  };
+}
+
+/**
+ * Escape regex special characters in a literal string.
+ */
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Recursively walk a path, rewriting markers in every supported file.
+ */
+function walk(targetPath, paddingTypes, { dryRun, log }) {
   const updated = [];
   const stat = fs.statSync(targetPath);
-  // 
+  //
   if (stat.isDirectory()) {
     const entries = fs.readdirSync(targetPath, { withFileTypes: true });
     for (const entry of entries) {
       if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
-      updated.push(...insertSeparators(path.join(targetPath, entry.name), { dryRun, log }));
+      updated.push(...walk(path.join(targetPath, entry.name), paddingTypes, { dryRun, log }));
     }
     return updated;
   }
-  // 
-  const paddingType = paddingTypeForFile(targetPath);
+  //
+  const paddingType = paddingTypes.find(type => type.FILE_EXT.test(targetPath)) ?? null;
   if (!paddingType) return updated;
   //
   const content = fs.readFileSync(targetPath, 'utf8');
@@ -64,14 +162,6 @@ function insertSeparators(targetPath, { dryRun = false, log = console.log } = {}
     updated.push(targetPath);
   }
   return updated;
-}
-
-/**
- * Return the padding params whose FILE_EXT matches the given filename, or null
- * if the file type is not supported.
- */
-function paddingTypeForFile(fileName) {
-  return PADDING_TYPES.find(type => type.FILE_EXT.test(fileName)) ?? null;
 }
 
 /**
@@ -97,7 +187,7 @@ function formatHeaders(text, paddingType) {
     }
     const regionMatch = line.match(paddingType.REGION_MARKER);
     if (regionMatch) {
-      return formatRegion(regionMatch[1]?.trim() ?? '', indent);
+      return formatRegion(regionMatch[1]?.trim() ?? '', paddingType, indent);
     }
     return line;
   }).join('\n');
@@ -108,7 +198,7 @@ function formatHeaders(text, paddingType) {
  */
 function formatSection(label, paddingType, indent) {
   const [open, close] = paddingType.BOOKENDS;
-  const lineLen = TOTAL_LEN - indent.length;
+  const lineLen = paddingType.TOTAL_LEN - indent.length;
   const available = lineLen - open.length - close.length - label.length - 2;
   const left = Math.max(Math.ceil(available / 2), 0);
   const right = Math.max(Math.floor(available / 2), 0);
@@ -119,9 +209,9 @@ function formatSection(label, paddingType, indent) {
  * Build a 3-line region header block with the label centered on the middle line.
  * Each line is exactly {TOTAL_LEN} characters: "// " + content + " //"
  */
-function formatRegion(label, indent) {
-  const [open, close] = ['// ', ' //'];
-  const lineLen = TOTAL_LEN - indent.length;
+function formatRegion(label, paddingType, indent) {
+  const [open, close] = paddingType.BOOKENDS;
+  const lineLen = paddingType.TOTAL_LEN - indent.length;
   const inner = lineLen - open.length - close.length;
   const rule = indent + open + '='.repeat(inner) + close;
   const leftPad = Math.max(Math.floor((inner - label.length) / 2), 0);

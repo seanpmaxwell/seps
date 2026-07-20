@@ -6,9 +6,9 @@
   "bin": {
     "seps": "bin/cli.js"
   },
-  "main": "src/main.js",
+  "main": "src/insert-separators.js",
   "exports": {
-    ".": "./src/main.js"
+    ".": "./src/insert-separators.js"
   },
   "files": [
     "bin",
