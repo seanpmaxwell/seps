@@ -14,20 +14,20 @@ If no paths are given, the current directory is walked recursively (skipping
 
 ### Options
 
-| Option            | Description                                      |
-| ----------------- | ------------------------------------------------ |
-| `-n`, `--dry-run` | Show what would change without writing files.    |
-| `-h`, `--help`    | Show help.                                       |
-| `-v`, `--version` | Show the version.                                |
+| Option            | Description                                   |
+| ----------------- | --------------------------------------------- |
+| `-n`, `--dry-run` | Show what would change without writing files. |
+| `-h`, `--help`    | Show help.                                    |
+| `-v`, `--version` | Show the version.                             |
 
 ## Markers
 
 Write a marker on its own line and `seps` rewrites it in place:
 
-| Marker           | Result                                        |
-| ---------------- | --------------------------------------------- |
-| `// @reg Label`  | **Region** — a 3-line boxed header block.     |
-| `// @sec Label`  | **Section** — a single centered header line.  |
+| Marker          | Result                                       |
+| --------------- | -------------------------------------------- |
+| `// @reg Label` | **Region** — a 3-line boxed header block.    |
+| `// @sec Label` | **Section** — a single centered header line. |
 
 For example, this:
 
@@ -58,21 +58,21 @@ defaults; everything else keeps its default.
 The `All` key holds settings shared by every language. Every other top-level
 key is a language — unknown keys define new languages.
 
-| `All` field   | Meaning                                                                    |
-| ------------- | -------------------------------------------------------------------------- |
-| `Markers`     | `[region, section]` marker tokens. Defaults to `["@reg", "@sec"]`.         |
-| `TotalLength` | Width of generated header lines in characters. Defaults to `79`.           |
+| `All` field   | Meaning                                                            |
+| ------------- | ------------------------------------------------------------------ |
+| `Markers`     | `[region, section]` marker tokens. Defaults to `["@reg", "@sec"]`. |
+| `TotalLength` | Width of generated header lines in characters. Defaults to `79`.   |
 
 Each language entry declares how comments are written — `seps` builds the
 marker matching itself, no regexes needed:
 
-| Language field | Meaning                                                                            |
-| -------------- | ---------------------------------------------------------------------------------- |
-| `EXTENSIONS`   | File extensions to match, e.g. `["py"]`.                                           |
-| `COMMENT`      | Comment open/close the markers are written in; close is `""` for line comments.    |
-| `BOOKENDS`     | Optional. Start/end of generated header lines. Defaults to the comment syntax.     |
-| `Markers`      | Optional. Overrides `All.Markers` for this language.                               |
-| `TotalLength`  | Optional. Overrides `All.TotalLength` for this language.                           |
+| Language field | Meaning                                                                         |
+| -------------- | ------------------------------------------------------------------------------- |
+| `EXTENSIONS`   | File extensions to match, e.g. `["py"]`.                                        |
+| `COMMENT`      | Comment open/close the markers are written in; close is `""` for line comments. |
+| `BOOKENDS`     | Optional. Start/end of generated header lines. Defaults to the comment syntax.  |
+| `Markers`      | Optional. Overrides `All.Markers` for this language.                            |
+| `TotalLength`  | Optional. Overrides `All.TotalLength` for this language.                        |
 
 ```json
 {
@@ -95,11 +95,11 @@ header block 100 characters wide.
 
 Built-in languages and their defaults:
 
-| Key    | Files                     | Markers written as  | Bookends       |
-| ------ | ------------------------- | ------------------- | -------------- |
-| `Js`   | `.js .jsx .ts .tsx .mjs`  | `// @reg Label`     | `// ` … ` //`  |
-| `Java` | `.java`                   | `/* @reg Label */`  | `// ` … ` //`  |
-| `Css`  | `.css .scss`              | `/* @reg Label */`  | `/* ` … ` */`  |
+| Key    | Files                    | Markers written as | Bookends      |
+| ------ | ------------------------ | ------------------ | ------------- |
+| `Js`   | `.js .jsx .ts .tsx .mjs` | `// @reg Label`    | `// ` … ` //` |
+| `Java` | `.java`                  | `/* @reg Label */` | `// ` … ` //` |
+| `Css`  | `.css .scss`             | `/* @reg Label */` | `/* ` … ` */` |
 
 Rather than writing the file from scratch, you can generate one pre-filled
 with all the default settings and edit from there:

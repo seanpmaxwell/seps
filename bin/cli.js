@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable no-undef */
 
 import insertSeparators, { initConfig } from '../src/insert-separators.js';
 
@@ -34,7 +33,7 @@ main();
 
 /**
  * Main
- * @returns 
+ * @returns
  */
 async function main() {
   const args = process.argv.slice(2);
@@ -87,18 +86,22 @@ async function main() {
   }
   //
   const verb = dryRun ? 'would be updated' : 'updated';
-  process.stdout.write(`seps: ${total} file${total === 1 ? '' : 's'} ${verb}.\n`);
+  process.stdout.write(
+    `seps: ${total} file${total === 1 ? '' : 's'} ${verb}.\n`,
+  );
 }
 
 /**
- * 
- * @returns 
+ *
+ * @returns
  */
 async function readVersion() {
   const { readFileSync } = await import('fs');
   const { fileURLToPath } = await import('url');
   const { dirname, join } = await import('path');
   const here = dirname(fileURLToPath(import.meta.url));
-  const pkg = JSON.parse(readFileSync(join(here, '..', 'package.json'), 'utf8'));
+  const pkg = JSON.parse(
+    readFileSync(join(here, '..', 'package.json'), 'utf8'),
+  );
   return pkg.version;
 }

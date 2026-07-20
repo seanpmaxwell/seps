@@ -1,5 +1,3 @@
-/* eslint-disable no-undef */
-
 import fs from 'fs';
 import path from 'path';
 
@@ -43,9 +41,14 @@ const DefaultConfig = {
  * Process a path (file or directory). Directories are walked recursively.
  * Returns the list of file paths that were updated.
  */
-function insertSeparators(targetPath, { dryRun = false, log = console.log } = {}) {
+function insertSeparators(
+  targetPath,
+  { dryRun = false, log = console.log } = {},
+) {
   const { All, ...languages } = loadConfig(configDirFor(targetPath), log);
-  const paddingTypes = Object.entries(languages).map(([lang, entry]) => compileEntry(lang, entry, All));
+  const paddingTypes = Object.entries(languages).map(([lang, entry]) =>
+    compileEntry(lang, entry, All),
+  );
   return walk(targetPath, paddingTypes, { dryRun, log });
 }
 
@@ -59,7 +62,11 @@ function initConfig(dir = process.cwd()) {
   if (fs.existsSync(configPath)) {
     throw new Error(`${CONFIG_FILE_NAME} already exists here, not overwriting`);
   }
-  fs.writeFileSync(configPath, `${JSON.stringify(DefaultConfig, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(
+    configPath,
+    `${JSON.stringify(DefaultConfig, null, 2)}\n`,
+    'utf8',
+  );
   return configPath;
 }
 
@@ -68,8 +75,12 @@ function initConfig(dir = process.cwd()) {
  * directory if it has one, otherwise the directory seps is being run from.
  */
 function configDirFor(targetPath) {
-  const targetDir = fs.statSync(targetPath).isDirectory() ? targetPath : path.dirname(targetPath);
-  return fs.existsSync(path.join(targetDir, CONFIG_FILE_NAME)) ? targetDir : process.cwd();
+  const targetDir = fs.statSync(targetPath).isDirectory()
+    ? targetPath
+    : path.dirname(targetPath);
+  return fs.existsSync(path.join(targetDir, CONFIG_FILE_NAME))
+    ? targetDir
+    : process.cwd();
 }
 
 /**
@@ -85,14 +96,19 @@ function loadConfig(cwd, log = console.log) {
   try {
     overrides = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   } catch (err) {
-    throw new Error(`invalid ${CONFIG_FILE_NAME}: ${err.message}`);
+    throw new Error(`invalid ${CONFIG_FILE_NAME}: ${err.message}`, {
+      cause: err,
+    });
   }
   // "All" holds settings shared by every language (Markers, TotalLength);
   // per-language values still win over them. Every other key is a language.
   const { All: allOverrides, ...langOverrides } = overrides;
   const config = { All: { ...DefaultConfig.All, ...allOverrides } };
   const defaultLangs = Object.keys(DefaultConfig).filter(key => key !== 'All');
-  for (const lang of new Set([...defaultLangs, ...Object.keys(langOverrides)])) {
+  for (const lang of new Set([
+    ...defaultLangs,
+    ...Object.keys(langOverrides),
+  ])) {
     config[lang] = { ...DefaultConfig[lang], ...langOverrides[lang] };
   }
   if (log) log(`Using config overrides from: ${configPath}`);
@@ -108,24 +124,39 @@ function loadConfig(cwd, log = console.log) {
 function compileEntry(lang, entry, all) {
   const { EXTENSIONS, COMMENT, BOOKENDS, Markers, TotalLength } = entry;
   if (!Array.isArray(EXTENSIONS) || EXTENSIONS.length === 0) {
-    throw new Error(`invalid ${CONFIG_FILE_NAME}: "${lang}" needs an EXTENSIONS array, e.g. ["py"]`);
+    throw new Error(
+      `invalid ${CONFIG_FILE_NAME}: "${lang}" needs an EXTENSIONS array, e.g. ["py"]`,
+    );
   }
   const [open, close] = Array.isArray(COMMENT) ? COMMENT : [];
   if (typeof open !== 'string' || typeof close !== 'string') {
-    throw new Error(`invalid ${CONFIG_FILE_NAME}: "${lang}" needs a COMMENT pair, e.g. ["# ", ""]`);
+    throw new Error(
+      `invalid ${CONFIG_FILE_NAME}: "${lang}" needs a COMMENT pair, e.g. ["# ", ""]`,
+    );
   }
   const [regionToken, sectionToken] = Markers ?? all.Markers ?? [];
-  if (typeof regionToken !== 'string' || !regionToken || typeof sectionToken !== 'string' || !sectionToken) {
-    throw new Error(`invalid ${CONFIG_FILE_NAME}: "${lang}" Markers must be a [region, section] pair, e.g. ["@reg", "@sec"]`);
+  if (
+    typeof regionToken !== 'string' ||
+    !regionToken ||
+    typeof sectionToken !== 'string' ||
+    !sectionToken
+  ) {
+    throw new Error(
+      `invalid ${CONFIG_FILE_NAME}: "${lang}" Markers must be a [region, section] pair, e.g. ["@reg", "@sec"]`,
+    );
   }
   const totalLen = TotalLength ?? all.TotalLength;
   if (!Number.isInteger(totalLen) || totalLen < 1) {
-    throw new Error(`invalid ${CONFIG_FILE_NAME}: "${lang}" TotalLength must be a positive integer, e.g. 119`);
+    throw new Error(
+      `invalid ${CONFIG_FILE_NAME}: "${lang}" TotalLength must be a positive integer, e.g. 119`,
+    );
   }
   //
   const exts = EXTENSIONS.map(ext => escapeRegex(ext.replace(/^\./, '')));
   const marker = token =>
-    new RegExp(`^\\s*${escapeRegex(open)}${escapeRegex(token)} (.+?)${escapeRegex(close)}\\s*$`);
+    new RegExp(
+      `^\\s*${escapeRegex(open)}${escapeRegex(token)} (.+?)${escapeRegex(close)}\\s*$`,
+    );
   //
   return {
     FILE_EXT: new RegExp(`\\.(${exts.join('|')})$`),
@@ -154,12 +185,18 @@ function walk(targetPath, paddingTypes, { dryRun, log }) {
     const entries = fs.readdirSync(targetPath, { withFileTypes: true });
     for (const entry of entries) {
       if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
-      updated.push(...walk(path.join(targetPath, entry.name), paddingTypes, { dryRun, log }));
+      updated.push(
+        ...walk(path.join(targetPath, entry.name), paddingTypes, {
+          dryRun,
+          log,
+        }),
+      );
     }
     return updated;
   }
   //
-  const paddingType = paddingTypes.find(type => type.FILE_EXT.test(targetPath)) ?? null;
+  const paddingType =
+    paddingTypes.find(type => type.FILE_EXT.test(targetPath)) ?? null;
   if (!paddingType) return updated;
   //
   const content = fs.readFileSync(targetPath, 'utf8');
@@ -187,18 +224,25 @@ function walk(targetPath, paddingTypes, { dryRun, log }) {
  * // ==================== someText ===================== //
  */
 function formatHeaders(text, paddingType) {
-  return text.split('\n').map(line => {
-    const indent = line.match(/^(\s*)/)[1];
-    const sectionMatch = line.match(paddingType.SECTION_MARKER);
-    if (sectionMatch) {
-      return formatSection(sectionMatch[1]?.trim() ?? '', paddingType, indent);
-    }
-    const regionMatch = line.match(paddingType.REGION_MARKER);
-    if (regionMatch) {
-      return formatRegion(regionMatch[1]?.trim() ?? '', paddingType, indent);
-    }
-    return line;
-  }).join('\n');
+  return text
+    .split('\n')
+    .map(line => {
+      const indent = line.match(/^(\s*)/)[1];
+      const sectionMatch = line.match(paddingType.SECTION_MARKER);
+      if (sectionMatch) {
+        return formatSection(
+          sectionMatch[1]?.trim() ?? '',
+          paddingType,
+          indent,
+        );
+      }
+      const regionMatch = line.match(paddingType.REGION_MARKER);
+      if (regionMatch) {
+        return formatRegion(regionMatch[1]?.trim() ?? '', paddingType, indent);
+      }
+      return line;
+    })
+    .join('\n');
 }
 
 /**
@@ -224,7 +268,8 @@ function formatRegion(label, paddingType, indent) {
   const rule = indent + open + '='.repeat(inner) + close;
   const leftPad = Math.max(Math.floor((inner - label.length) / 2), 0);
   const rightPad = Math.max(inner - label.length - leftPad, 0);
-  const middle = indent + open + ' '.repeat(leftPad) + label + ' '.repeat(rightPad) + close;
+  const middle =
+    indent + open + ' '.repeat(leftPad) + label + ' '.repeat(rightPad) + close;
   return [rule, middle, rule].join('\n');
 }
 
