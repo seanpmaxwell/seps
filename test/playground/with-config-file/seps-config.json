@@ -1,0 +1,27 @@
+{
+  "All": {
+    "Markers": ["@reg", "@sec"],
+    "TotalLength": 79,
+    "FillerCharacter": "="
+  },
+  "Js": {
+    "Extensions": ["ts", "tsx", "js", "jsx", "mjs", "cjs"],
+    "Comment": ["// ", ""],
+    "Bookends": ["// ", " //"]
+  },
+  "Java": {
+    "Extensions": ["java"],
+    "Comment": ["// ", ""],
+    "Bookends": ["// ", " //"]
+  },
+  "Css": {
+    "Extensions": ["css", "scss"],
+    "Comment": ["/* ", " */"],
+    "Bookends": ["/* ", " */"]
+  },
+  "Python": {
+    "Extensions": ["py"],
+    "Comment": ["# ", ""],
+    "Bookends": ["# ", " #"]
+  }
+}

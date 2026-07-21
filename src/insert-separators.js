@@ -24,7 +24,7 @@ const DefaultConfig = {
   },
   Java: {
     Extensions: ['java'],
-    Comment: ['/* ', ' */'],
+    Comment: ['// ', ''],
     Bookends: ['// ', ' //'],
   },
   Css: {
@@ -63,12 +63,28 @@ function initConfig(dir = process.cwd()) {
   if (fs.existsSync(configPath)) {
     throw new Error(`${CONFIG_FILE_NAME} already exists here, not overwriting`);
   }
-  fs.writeFileSync(
-    configPath,
-    `${JSON.stringify(DefaultConfig, null, 2)}\n`,
-    'utf8',
-  );
+  fs.writeFileSync(configPath, `${stringifyConfig(DefaultConfig)}\n`, 'utf8');
   return configPath;
+}
+
+/**
+ * Serialize a config object like JSON.stringify(value, null, 2), but keep
+ * arrays on a single line (e.g. "Markers": ["@reg", "@sec"]) instead of one
+ * element per line. Config arrays only ever hold primitives.
+ */
+function stringifyConfig(value, indent = '') {
+  if (Array.isArray(value)) {
+    return `[${value.map(item => JSON.stringify(item)).join(', ')}]`;
+  }
+  if (value && typeof value === 'object') {
+    const inner = `${indent}  `;
+    const entries = Object.entries(value).map(
+      ([key, val]) =>
+        `${inner}${JSON.stringify(key)}: ${stringifyConfig(val, inner)}`,
+    );
+    return `{\n${entries.join(',\n')}\n${indent}}`;
+  }
+  return JSON.stringify(value);
 }
 
 /**

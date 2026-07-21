@@ -2,6 +2,10 @@
 
 import insertSeparators, { initConfig } from '../src/insert-separators.js';
 
+// ========================================================================= //
+//                                  Constants                                //
+// ========================================================================= //
+
 const HELP = `seps - format separator/header comment markers
 
   Usage:
@@ -29,7 +33,15 @@ const HELP = `seps - format separator/header comment markers
   Supported files: .js .jsx .ts .tsx .mjs .java (more via seps-config.json)
 `;
 
+// ========================================================================= //
+//                                      Run                                  //
+// ========================================================================= //
+
 main();
+
+// ========================================================================= //
+//                                    Functions                              //
+// ========================================================================= //
 
 /**
  * Main
@@ -37,6 +49,8 @@ main();
  */
 async function main() {
   const args = process.argv.slice(2);
+
+  // -- Print start message -- //
   // "seps init" generates a default config file instead of processing paths
   if (args[0] === 'init') {
     try {
@@ -49,7 +63,8 @@ async function main() {
   }
   const paths = [];
   let dryRun = false;
-  // Process command line arguments
+
+  // -- Process command line arguments -- //
   for (const arg of args) {
     switch (arg) {
       case '-h':
@@ -74,7 +89,8 @@ async function main() {
     }
   }
   if (paths.length === 0) paths.push('.');
-  //
+
+  // -- Run "InsertSeprators" -- //
   let total = 0;
   for (const p of paths) {
     try {
@@ -84,7 +100,8 @@ async function main() {
       process.exitCode = 1;
     }
   }
-  //
+
+  // -- Print finished message -- //
   const verb = dryRun ? 'would be updated' : 'updated';
   process.stdout.write(
     `seps: ${total} file${total === 1 ? '' : 's'} ${verb}.\n`,
@@ -92,8 +109,8 @@ async function main() {
 }
 
 /**
- *
- * @returns
+ * Look at the package.json and return the version. 
+ * @returns 
  */
 async function readVersion() {
   const { readFileSync } = await import('fs');
