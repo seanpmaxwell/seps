@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 // ========================================================================= //
 //                                  Constants                                //
@@ -12,31 +13,15 @@ const CONFIG_FILE_NAME = 'seps-config.json';
 const REGION_TOKEN = '@reg';
 const SECTION_TOKEN = '@sec';
 
+// The built-in defaults, loaded from DefaultConfig.json next to this module.
 // Each language declares its file extensions, the comment syntax markers are
 // written in (open/close, close empty for line comments), and the bookends
 // used for the generated header lines (defaults to the comment syntax). The
 // marker regexes are built from these — no regexes in config files.
-const DefaultConfig = {
-  All: {
-    CharacterLimit: 79,
-    FillerCharacter: '=',
-  },
-  Js: {
-    Extensions: ['ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs'],
-    Comment: ['// ', ''],
-    Bookends: ['// ', ' //'],
-  },
-  Java: {
-    Extensions: ['java'],
-    Comment: ['// ', ''],
-    Bookends: ['// ', ' //'],
-  },
-  Css: {
-    Extensions: ['css', 'scss'],
-    Comment: ['/* ', ' */'],
-    Bookends: ['/* ', ' */'],
-  },
-};
+const here = path.dirname(fileURLToPath(import.meta.url));
+const DefaultConfig = JSON.parse(
+  fs.readFileSync(path.join(here, 'DefaultConfig.json'), 'utf8'),
+);
 
 // ========================================================================= //
 //                                  Functions                                //
@@ -144,8 +129,14 @@ function loadConfig(cwd, log = console.log) {
  * back to the shared "All" settings.
  */
 function compileEntry(lang, entry, all) {
-  const { Extensions, Comment, Bookends, CharacterLimit, FillerCharacter } =
-    entry;
+  const {
+    Extensions,
+    Comment,
+    Bookends,
+    CharacterLimit,
+    FillerCharacter,
+    DisableCapitalization,
+  } = entry;
   if (!Array.isArray(Extensions) || Extensions.length === 0) {
     throw new Error(
       `invalid ${CONFIG_FILE_NAME}: "${lang}" needs an Extensions array, e.g. ["py"]`,
@@ -169,6 +160,13 @@ function compileEntry(lang, entry, all) {
       `invalid ${CONFIG_FILE_NAME}: "${lang}" FillerCharacter must be a single character, e.g. "="`,
     );
   }
+  const disableCap =
+    DisableCapitalization ?? all.DisableCapitalization ?? false;
+  if (typeof disableCap !== 'boolean') {
+    throw new Error(
+      `invalid ${CONFIG_FILE_NAME}: "${lang}" DisableCapitalization must be true or false`,
+    );
+  }
   //
   const exts = Extensions.map(ext => escapeRegex(ext.replace(/^\./, '')));
   // Capture the label if present. A bare marker ("// @reg" with no label) still
@@ -185,6 +183,7 @@ function compileEntry(lang, entry, all) {
     BOOKENDS: Bookends ?? (close ? [open, close] : [open, ` ${open.trim()}`]),
     CHAR_LIMIT: charLimit,
     FILLER: filler,
+    DISABLE_CAP: disableCap,
   };
 }
 
@@ -255,13 +254,21 @@ function formatSeparators(text, paddingType, filePath, warn = console.warn) {
       if (sectionMatch) {
         const label = sectionMatch[1]?.trim() ?? '';
         if (!label) return warnNoLabel(line, filePath, index, warn);
-        return formatSection(label, paddingType, indent);
+        return formatSection(
+          capitalize(label, paddingType),
+          paddingType,
+          indent,
+        );
       }
       const regionMatch = line.match(paddingType.REGION_MARKER);
       if (regionMatch) {
         const label = regionMatch[1]?.trim() ?? '';
         if (!label) return warnNoLabel(line, filePath, index, warn);
-        return formatRegion(label, paddingType, indent);
+        return formatRegion(
+          capitalize(label, paddingType),
+          paddingType,
+          indent,
+        );
       }
       return line;
     })
@@ -277,6 +284,23 @@ function warnNoLabel(line, filePath, index, warn) {
     `Warning: ${filePath}:${index + 1}: separator marker has no label, skipping`,
   );
   return line;
+}
+
+/**
+ * Capitalize each word in a label (first letter upper, rest lower), unless the
+ * language has DisableCapitalization set. Words that start or end with a
+ * non-alphanumeric character are left untouched (e.g. "@decorator", "foo()").
+ */
+function capitalize(label, paddingType) {
+  if (paddingType.DISABLE_CAP) return label;
+  return label
+    .split(/\s+/)
+    .map(word => {
+      const isAlnum = ch => /[a-z0-9]/i.test(ch);
+      if (!isAlnum(word[0]) || !isAlnum(word[word.length - 1])) return word;
+      return word[0].toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
 }
 
 /**

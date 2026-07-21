@@ -43,8 +43,8 @@ becomes:
 // ========================================================================= //
 ```
 
-Supported files: `.js` `.jsx` `.ts` `.tsx` `.mjs` `.cjs` `.java` `.css`
-`.scss` — and any others you add via configuration.
+Supported files: JavaScript/TypeScript, Java, CSS/SCSS, C, C++, Go, Rust,
+PHP, Ruby, and SQL — and any others you add via configuration.
 
 ## Configuration
 
@@ -59,21 +59,29 @@ defaults; everything else keeps its default.
 The `All` key holds settings shared by every language. Every other top-level
 key is a language — unknown keys define new languages.
 
-| `All` field       | Meaning                                                           |
-| ----------------- | ----------------------------------------------------------------- |
-| `CharacterLimit`  | Column the header lines fill up to and stop at. Defaults to `79`. |
-| `FillerCharacter` | Character the header lines are padded with. Defaults to `"="`.    |
+| `All` field             | Meaning                                                           |
+| ----------------------- | ----------------------------------------------------------------- |
+| `CharacterLimit`        | Column the header lines fill up to and stop at. Defaults to `79`. |
+| `FillerCharacter`       | Character the header lines are padded with. Defaults to `"="`.    |
+| `DisableCapitalization` | Turn off label capitalization. Defaults to `false`.               |
+
+By default each word in a label is capitalized (first letter upper, the rest
+lower) — so `// @reg my cool region` becomes a **My Cool Region** header. Words
+that start or end with a non-alphanumeric character are left as written (e.g.
+`@decorator`, `foo()`), and setting `DisableCapitalization` to `true` leaves
+labels exactly as typed.
 
 Each language entry declares how comments are written — `seps` builds the
 marker matching itself, no regexes needed:
 
-| Language field    | Meaning                                                                         |
-| ----------------- | ------------------------------------------------------------------------------- |
-| `Extensions`      | File extensions to match, e.g. `["py"]`.                                        |
-| `Comment`         | Comment open/close the markers are written in; close is `""` for line comments. |
-| `Bookends`        | Optional. Start/end of generated header lines. Defaults to the comment syntax.  |
-| `CharacterLimit`  | Optional. Overrides `All.CharacterLimit` for this language.                     |
-| `FillerCharacter` | Optional. Overrides `All.FillerCharacter` for this language.                    |
+| Language field          | Meaning                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| `Extensions`            | File extensions to match, e.g. `["py"]`.                                        |
+| `Comment`               | Comment open/close the markers are written in; close is `""` for line comments. |
+| `Bookends`              | Optional. Start/end of generated header lines. Defaults to the comment syntax.  |
+| `CharacterLimit`        | Optional. Overrides `All.CharacterLimit` for this language.                     |
+| `FillerCharacter`       | Optional. Overrides `All.FillerCharacter` for this language.                    |
+| `DisableCapitalization` | Optional. Overrides `All.DisableCapitalization` for this language.              |
 
 ```json
 {
@@ -96,11 +104,18 @@ header block that fills up to 100 characters.
 
 Built-in languages and their defaults:
 
-| Key    | Files                         | Markers written as | Bookends      |
-| ------ | ----------------------------- | ------------------ | ------------- |
-| `Js`   | `.js .jsx .ts .tsx .mjs .cjs` | `// @reg Label`    | `// ` … ` //` |
-| `Java` | `.java`                       | `/* @reg Label */` | `// ` … ` //` |
-| `Css`  | `.css .scss`                  | `/* @reg Label */` | `/* ` … ` */` |
+| Key          | Files                         | Markers written as | Bookends      |
+| ------------ | ----------------------------- | ------------------ | ------------- |
+| `JavaScript` | `.js .jsx .ts .tsx .mjs .cjs` | `// @reg Label`    | `// ` … ` //` |
+| `Java`       | `.java`                       | `// @reg Label`    | `// ` … ` //` |
+| `Css`        | `.css .scss`                  | `/* @reg Label */` | `/* ` … ` */` |
+| `C`          | `.c .h`                       | `// @reg Label`    | `// ` … ` //` |
+| `Cpp`        | `.cpp .cc .cxx .hpp .hh .hxx` | `// @reg Label`    | `// ` … ` //` |
+| `Go`         | `.go`                         | `// @reg Label`    | `// ` … ` //` |
+| `Rust`       | `.rs`                         | `// @reg Label`    | `// ` … ` //` |
+| `Php`        | `.php`                        | `// @reg Label`    | `// ` … ` //` |
+| `Ruby`       | `.rb`                         | `# @reg Label`     | `# ` … ` #`   |
+| `Sql`        | `.sql`                        | `-- @reg Label`    | `-- ` … ` --` |
 
 Rather than writing the file from scratch, you can generate one pre-filled
 with all the default settings and edit from there:

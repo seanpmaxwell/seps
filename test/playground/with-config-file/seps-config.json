@@ -4,6 +4,7 @@
     "FillerCharacter": "="
   },
   "Js": {
+    "CharacterLimit": 79,
     "Extensions": ["ts", "tsx", "js", "jsx", "mjs", "cjs"],
     "Comment": ["// ", ""],
     "Bookends": ["// ", " //"]
@@ -20,6 +21,12 @@
   },
   "Python": {
     "Extensions": ["py"],
+    "Comment": ["# ", ""],
+    "Bookends": ["# ", " #"]
+  },
+  "Ruby": {
+    "Extensions": ["rb"],
+    "FillerCharacter": "*",
     "Comment": ["# ", ""],
     "Bookends": ["# ", " #"]
   }
