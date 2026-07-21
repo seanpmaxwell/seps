@@ -3,7 +3,7 @@
     "CharacterLimit": 119,
     "FillerCharacter": "="
   },
-  "Js": {
+  "JavaScript": {
     "CharacterLimit": 79,
     "Extensions": ["ts", "tsx", "js", "jsx", "mjs", "cjs"],
     "Comment": ["// ", ""],
@@ -29,5 +29,11 @@
     "FillerCharacter": "*",
     "Comment": ["# ", ""],
     "Bookends": ["# ", " #"]
+  },
+  "Sql": {
+    "Extensions": ["sql"],
+    "DisableCapitalization": true,
+    "Comment": ["-- ", ""],
+    "Bookends": ["-- ", " --"]
   }
 }

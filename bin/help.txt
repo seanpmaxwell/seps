@@ -1,0 +1,26 @@
+seps - format separator / header comment markers
+
+Usage:
+  seps [options] [paths...]
+  seps init
+
+Commands:
+  init             Generate a seps-config.json in the current directory
+                   containing all the default settings.
+
+Arguments:
+  paths            Files or directories to process (default: current
+                   directory). Directories are walked recursively, skipping
+                   node_modules and dotfiles.
+
+Options:
+  -n, --dry-run    Show what would change without writing any files.
+  -h, --help       Show this help.
+  -v, --version    Show the version.
+
+Markers (rewritten in place, centered and padded to the character limit):
+  // @reg Label    Region  -> a 3-line boxed header block.
+  // @sec Label    Section -> a single centered header line.
+
+Supported files: JavaScript, Java, CSS, C, C++, Go, Rust, PHP, Ruby, SQL
+(and any others added via seps-config.json).

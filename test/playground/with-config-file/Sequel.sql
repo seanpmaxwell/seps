@@ -1,4 +1,4 @@
--- @reg Setup Stored Procedure
+-- @reg Setup stored-procedure
 
 -- @sec Fetch users
 

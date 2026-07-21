@@ -1,37 +1,16 @@
 #!/usr/bin/env node
 
+import { readFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 import insertSeparators, { initConfig } from '../src/insert-separators.js';
 
 // ========================================================================= //
 //                                  Constants                                //
 // ========================================================================= //
 
-const HELP = `seps - format separator/header comment markers
-
-  Usage:
-    seps [options] [paths...]
-    seps init
-
-  Commands:
-    init             Generate a seps-config.json in the current directory
-                    containing all the default settings.
-
-  Arguments:
-    paths            Files or directories to process (default: current directory).
-                    Directories are walked recursively, skipping node_modules
-                    and dotfiles.
-
-  Options:
-    -n, --dry-run    Show what would change without writing any files.
-    -h, --help       Show this help.
-    -v, --version    Show the version.
-
-  Markers (rewritten in place, centered to a fixed width):
-    "// @reg Label"  Region  -> a 3-line boxed header block.
-    "// @sec Label"  Section -> a single centered header line.
-
-  Supported files: .js .jsx .ts .tsx .mjs .java (more via seps-config.json)
-`;
+const HERE = dirname(fileURLToPath(import.meta.url));
+const HELP = readFileSync(join(HERE, 'help.txt'), 'utf8');
 
 // ========================================================================= //
 //                                      Run                                  //
@@ -73,7 +52,7 @@ async function main() {
         return;
       case '-v':
       case '--version':
-        process.stdout.write(`${await readVersion()}\n`);
+        process.stdout.write(`${readVersion()}\n`);
         return;
       case '-n':
       case '--dry-run':
@@ -109,16 +88,12 @@ async function main() {
 }
 
 /**
- * Look at the package.json and return the version. 
- * @returns 
+ * Look at the package.json and return the version.
+ * @returns the package version string
  */
-async function readVersion() {
-  const { readFileSync } = await import('fs');
-  const { fileURLToPath } = await import('url');
-  const { dirname, join } = await import('path');
-  const here = dirname(fileURLToPath(import.meta.url));
+function readVersion() {
   const pkg = JSON.parse(
-    readFileSync(join(here, '..', 'package.json'), 'utf8'),
+    readFileSync(join(HERE, '..', 'package.json'), 'utf8'),
   );
   return pkg.version;
 }

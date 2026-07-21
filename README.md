@@ -14,11 +14,11 @@ If no paths are given, the current directory is walked recursively (skipping
 
 ### Options
 
-| Option            | Description                                   |
-| ----------------- | --------------------------------------------- |
-| `-n`, `--dry-run` | Show what would change without writing files. |
-| `-h`, `--help`    | Show help.                                    |
-| `-v`, `--version` | Show the version.                             |
+| Option            | Description                                         |
+| ----------------- | --------------------------------------------------- |
+| `-n`, `--dry-run` | Show what files would change without writing files. |
+| `-h`, `--help`    | Show help.                                          |
+| `-v`, `--version` | Show the version.                                   |
 
 ## Markers
 
@@ -46,6 +46,24 @@ becomes:
 Supported files: JavaScript/TypeScript, Java, CSS/SCSS, C, C++, Go, Rust,
 PHP, Ruby, and SQL — and any others you add via configuration.
 
+## Terminology
+
+Given the source line `// @sec My Section`, seps produces:
+
+```
+// ============== My Section ============== //
+```
+
+The parts of that output are named as follows:
+
+| Term             | Refers to                                                                                 |
+| ---------------- | ----------------------------------------------------------------------------------------- |
+| Marker           | The token you write to request a separator: `@reg` (region) or `@sec` (section).          |
+| Comment          | What starts a comment for the marker — `//` here; the syntax the marker is written in.    |
+| Label            | The text after the marker (`My Section`), centered as the title of the separator.         |
+| Filler character | The repeated character that pads the line out to the limit (`=` above).                   |
+| Bookends         | The strings wrapping each generated line — here `// ` on the left and ` //` on the right. |
+
 ## Configuration
 
 `seps` works out of the box — you only need a config file if you want to
@@ -71,8 +89,7 @@ that start or end with a non-alphanumeric character are left as written (e.g.
 `@decorator`, `foo()`), and setting `DisableCapitalization` to `true` leaves
 labels exactly as typed.
 
-Each language entry declares how comments are written — `seps` builds the
-marker matching itself, no regexes needed:
+Each language can be configured individually via the `seps-config.json` file:
 
 | Language field          | Meaning                                                                         |
 | ----------------------- | ------------------------------------------------------------------------------- |
@@ -99,7 +116,7 @@ marker matching itself, no regexes needed:
 }
 ```
 
-With that config, `# @reg Label` in a `.py` file becomes a `# ---- #` boxed
+With that config, `# @reg Label` in a `.py` file becomes a `# --... Label ...-- #` boxed
 header block that fills up to 100 characters.
 
 Built-in languages and their defaults:
