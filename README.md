@@ -1,7 +1,7 @@
 # seps
 
 Format separator / header comment markers in your source files so labels are
-centered and every line is a fixed width.
+centered and each line fills up to a character limit.
 
 ## Usage
 
@@ -59,11 +59,10 @@ defaults; everything else keeps its default.
 The `All` key holds settings shared by every language. Every other top-level
 key is a language — unknown keys define new languages.
 
-| `All` field       | Meaning                                                            |
-| ----------------- | ------------------------------------------------------------------ |
-| `Markers`         | `[region, section]` marker tokens. Defaults to `["@reg", "@sec"]`. |
-| `TotalLength`     | Width of generated header lines in characters. Defaults to `79`.   |
-| `FillerCharacter` | Character the header lines are padded with. Defaults to `"="`.     |
+| `All` field       | Meaning                                                           |
+| ----------------- | ----------------------------------------------------------------- |
+| `CharacterLimit`  | Column the header lines fill up to and stop at. Defaults to `79`. |
+| `FillerCharacter` | Character the header lines are padded with. Defaults to `"="`.    |
 
 Each language entry declares how comments are written — `seps` builds the
 marker matching itself, no regexes needed:
@@ -73,15 +72,13 @@ marker matching itself, no regexes needed:
 | `Extensions`      | File extensions to match, e.g. `["py"]`.                                        |
 | `Comment`         | Comment open/close the markers are written in; close is `""` for line comments. |
 | `Bookends`        | Optional. Start/end of generated header lines. Defaults to the comment syntax.  |
-| `Markers`         | Optional. Overrides `All.Markers` for this language.                            |
-| `TotalLength`     | Optional. Overrides `All.TotalLength` for this language.                        |
+| `CharacterLimit`  | Optional. Overrides `All.CharacterLimit` for this language.                     |
 | `FillerCharacter` | Optional. Overrides `All.FillerCharacter` for this language.                    |
 
 ```json
 {
   "All": {
-    "Markers": ["@region", "@section"],
-    "TotalLength": 100,
+    "CharacterLimit": 100,
     "FillerCharacter": "-"
   },
   "Java": {
@@ -94,8 +91,8 @@ marker matching itself, no regexes needed:
 }
 ```
 
-With that config, `# @region Label` in a `.py` file becomes a `# ---- #` boxed
-header block 100 characters wide.
+With that config, `# @reg Label` in a `.py` file becomes a `# ---- #` boxed
+header block that fills up to 100 characters.
 
 Built-in languages and their defaults:
 

@@ -1,6 +1,6 @@
 {
   "All": {
-    "CharacterLimit": 119,
+    "CharacterLimit": 120,
     "FillerCharacter": "="
   },
   "Js": {
@@ -17,10 +17,5 @@
     "Extensions": ["css", "scss"],
     "Comment": ["/* ", " */"],
     "Bookends": ["/* ", " */"]
-  },
-  "Python": {
-    "Extensions": ["py"],
-    "Comment": ["# ", ""],
-    "Bookends": ["# ", " #"]
   }
 }

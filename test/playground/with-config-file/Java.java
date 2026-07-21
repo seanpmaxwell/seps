@@ -1,11 +1,12 @@
 
 class Java {
 
-    // @reg
+    // pick up here, formatting not working for Java files
+    // @reg 
 
     private String foo = "bar";
 
-    // @reg
+    // @reg Functions
 
     public String bar() {
         return this.foo;
