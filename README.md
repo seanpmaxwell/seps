@@ -1,7 +1,6 @@
 # seps
 
-Format separator / header comment markers in your source files so labels are
-centered and each line fills up to a character limit.
+Format separator / header comment markers in your source files so labels are centered and each line fills up to a character limit.
 
 ## Usage
 
@@ -9,8 +8,7 @@ centered and each line fills up to a character limit.
 npx seps [options] [paths...]
 ```
 
-If no paths are given, the current directory is walked recursively (skipping
-`node_modules` and dotfiles).
+If no paths are given, the current directory is walked recursively (skipping `node_modules` and dotfiles).
 
 ### Options
 
@@ -43,8 +41,7 @@ becomes:
 // ========================================================================= //
 ```
 
-Supported files: JavaScript/TypeScript, Java, CSS/SCSS, C, C++, Go, Rust,
-PHP, Ruby, and SQL — and any others you add via configuration.
+Supported files: JavaScript/TypeScript, Java, CSS/SCSS, C, C++, Go, Rust, PHP, Ruby, and SQL — and any others you add via configuration.
 
 ## Terminology
 
@@ -66,16 +63,11 @@ The parts of that output are named as follows:
 
 ## Configuration
 
-`seps` works out of the box — you only need a config file if you want to
-override the default settings.
+`seps` works out of the box — you only need a config file if you want to override the default settings.
 
-To do so, add a `seps-config.json`. `seps` looks for it in the target path's
-directory first, then falls back to the directory it is run from (nearest wins
-— the two are not merged). Any values in it override the corresponding
-defaults; everything else keeps its default.
+To do so, add a `seps-config.json`. `seps` looks for it in the target path's directory first, then falls back to the directory it is run from (nearest wins — the two are not merged). Any values in it override the corresponding defaults; everything else keeps its default.
 
-The `All` key holds settings shared by every language. Every other top-level
-key is a language — unknown keys define new languages.
+The `All` key holds settings shared by every language. Every other top-level key is a language — unknown keys define new languages.
 
 | `All` field             | Meaning                                                           |
 | ----------------------- | ----------------------------------------------------------------- |
@@ -83,11 +75,7 @@ key is a language — unknown keys define new languages.
 | `FillerCharacter`       | Character the header lines are padded with. Defaults to `"="`.    |
 | `DisableCapitalization` | Turn off label capitalization. Defaults to `false`.               |
 
-By default each word in a label is capitalized (first letter upper, the rest
-lower) — so `// @reg my cool region` becomes a **My Cool Region** header. Words
-that start or end with a non-alphanumeric character are left as written (e.g.
-`@decorator`, `foo()`), and setting `DisableCapitalization` to `true` leaves
-labels exactly as typed.
+By default each word in a label is capitalized (first letter upper, the rest lower) — so `// @reg my cool region` becomes a **My Cool Region** header. Words that start or end with a non-alphanumeric character are left as written (e.g. `@decorator`, `foo()`), and setting `DisableCapitalization` to `true` leaves labels exactly as typed.
 
 Each language can be configured individually via the `seps-config.json` file:
 
@@ -116,8 +104,7 @@ Each language can be configured individually via the `seps-config.json` file:
 }
 ```
 
-With that config, `# @reg Label` in a `.py` file becomes a `# --... Label ...-- #` boxed
-header block that fills up to 100 characters.
+> With that config, `# @reg Label` in a `.py` file becomes a boxed header block whose rule lines are padded with `-` and fill up to 100 characters.
 
 Built-in languages and their defaults:
 
@@ -134,15 +121,13 @@ Built-in languages and their defaults:
 | `Ruby`       | `.rb`                         | `# @reg Label`     | `# ` … ` #`   |
 | `Sql`        | `.sql`                        | `-- @reg Label`    | `-- ` … ` --` |
 
-Rather than writing the file from scratch, you can generate one pre-filled
-with all the default settings and edit from there:
+Rather than writing the file from scratch, you can generate one pre-filled with all the default settings and edit from there:
 
 ```bash
 npx seps init
 ```
 
-This writes a `seps-config.json` to the current directory (it refuses to
-overwrite an existing one).
+This writes a `seps-config.json` to the current directory (it refuses to overwrite an existing one).
 
 ## Programmatic use
 
