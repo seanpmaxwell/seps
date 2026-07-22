@@ -1,6 +1,22 @@
 # seps
 
-Format separator / header comment markers in your source files so labels are centered and each line fills up to a character limit.
+Command-line tool to insert separator/header comments in your source files so labels are centered and each line fills up to a character limit.
+
+## Preview 
+
+For example, this:
+
+```js
+// @reg Functions
+```
+
+becomes:
+
+```js
+// ========================================================================= //
+//                                 Functions                                 //
+// ========================================================================= //
+```
 
 ## Usage
 
@@ -26,20 +42,6 @@ Write a marker on its own line and `seps` rewrites it in place:
 | --------------- | -------------------------------------------- |
 | `// @reg Label` | **Region** — a 3-line boxed header block.    |
 | `// @sec Label` | **Section** — a single centered header line. |
-
-For example, this:
-
-```js
-// @reg Functions
-```
-
-becomes:
-
-```js
-// ========================================================================= //
-//                                 Functions                                 //
-// ========================================================================= //
-```
 
 Supported files: JavaScript/TypeScript, Java, CSS/SCSS, C, C++, Go, Rust, PHP, Ruby, and SQL — and any others you add via configuration.
 
@@ -75,7 +77,7 @@ The `All` key holds settings shared by every language. Every other top-level key
 | `FillerCharacter`       | Character the header lines are padded with. Defaults to `"="`.    |
 | `DisableCapitalization` | Turn off label capitalization. Defaults to `false`.               |
 
-By default each word in a label is capitalized (first letter upper, the rest lower) — so `// @reg my cool region` becomes a **My Cool Region** header. Words that start or end with a non-alphanumeric character are left as written (e.g. `@decorator`, `foo()`), and setting `DisableCapitalization` to `true` leaves labels exactly as typed.
+> By default each word in a label is capitalized (first letter upper, the rest lower) — so `// @reg my cool region` becomes a **My Cool Region** header. Words that start or end with a non-alphanumeric character are left as written (e.g. `@decorator`, `foo()`), and setting `DisableCapitalization` to `true` leaves labels exactly as typed.
 
 Each language can be configured individually via the `seps-config.json` file:
 

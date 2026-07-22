@@ -1,27 +1,37 @@
 {
   "name": "seps",
   "version": "0.1.0",
-  "description": "Format separator/header comment markers so labels are centered and lines are a fixed width.",
+  "description": "Format separator/header comment markers so labels are centered and each line fills up to a character limit.",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/seanpmaxwell/seps.git"
+  },
+  "homepage": "https://github.com/seanpmaxwell/seps#readme",
+  "bugs": "https://github.com/seanpmaxwell/seps/issues",
+  "author": "Sean Maxwell",
   "bin": {
     "seps": "bin/cli.js"
   },
-  "main": "src/insert-separators.js",
+  "main": "lib/insert-separators.js",
   "exports": {
-    ".": "./src/insert-separators.js"
+    ".": "./lib/insert-separators.js"
   },
   "files": [
     "bin",
-    "src",
+    "lib",
     "README.md"
   ],
   "scripts": {
-    "start": "node bin/cli.js",
+    "start": "npm run build && node bin/cli.js",
+    "build": "node scripts/build.js",
     "test": "vitest run",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run lint && npm run format:check && npm test"
   },
   "engines": {
     "node": ">=16"
@@ -31,11 +41,22 @@
     "formatter",
     "comments",
     "separators",
-    "headers"
+    "separator",
+    "headers",
+    "header",
+    "comment-headers",
+    "code-comments",
+    "region",
+    "section",
+    "banner",
+    "divider",
+    "code-formatting",
+    "source-code"
   ],
   "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "esbuild": "^0.28.1",
     "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.7.0",

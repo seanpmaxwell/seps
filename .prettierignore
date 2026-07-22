@@ -1,4 +1,6 @@
 # Formatting fixtures for seps itself
-test/playground-cmd/
+test/playground/
+# Build output
+lib/
 node_modules/
 package-lock.json

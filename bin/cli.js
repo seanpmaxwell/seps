@@ -3,7 +3,7 @@
 import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import insertSeparators, { initConfig } from '../src/insert-separators.js';
+import insertSeparators, { initConfig } from '../lib/insert-separators.js';
 
 // ========================================================================= //
 //                                  Constants                                //
@@ -28,7 +28,6 @@ main();
  */
 async function main() {
   const args = process.argv.slice(2);
-
   // -- Print start message -- //
   // "seps init" generates a default config file instead of processing paths
   if (args[0] === 'init') {
@@ -42,7 +41,6 @@ async function main() {
   }
   const paths = [];
   let dryRun = false;
-
   // -- Process command line arguments -- //
   for (const arg of args) {
     switch (arg) {
@@ -68,7 +66,6 @@ async function main() {
     }
   }
   if (paths.length === 0) paths.push('.');
-
   // -- Run "InsertSeprators" -- //
   let total = 0;
   for (const p of paths) {
@@ -79,7 +76,6 @@ async function main() {
       process.exitCode = 1;
     }
   }
-
   // -- Print finished message -- //
   const verb = dryRun ? 'would be updated' : 'updated';
   process.stdout.write(

@@ -20,6 +20,6 @@ export default [
   },
   {
     // Playground files are formatting fixtures for seps itself
-    ignores: ['test/playground-cmd/', 'node_modules/'],
+    ignores: ['test/playground/', 'lib/', 'node_modules/'],
   },
 ];
