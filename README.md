@@ -2,7 +2,7 @@
 
 Command-line tool to insert separator/header comments in your source files so labels are centered and each line fills up to a character limit.
 
-## Preview 
+## Preview
 
 For example, this:
 
