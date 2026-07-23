@@ -23,7 +23,8 @@ main();
 // ========================================================================= //
 
 /**
- * Main
+ * Start here
+ * 
  * @returns
  */
 async function main() {
@@ -66,7 +67,7 @@ async function main() {
     }
   }
   if (paths.length === 0) paths.push('.');
-  // -- Run "InsertSeprators" -- //
+  // -- Run insertSeparators() -- //
   let total = 0;
   for (const p of paths) {
     try {
@@ -78,18 +79,18 @@ async function main() {
   }
   // -- Print finished message -- //
   const verb = dryRun ? 'would be updated' : 'updated';
-  process.stdout.write(
-    `seps: ${total} file${total === 1 ? '' : 's'} ${verb}.\n`,
-  );
+  const message = `seps: ${total} file${total === 1 ? '' : 's'} ${verb}.\n`;
+  process.stdout.write(message);
 }
 
 /**
  * Look at the package.json and return the version.
- * @returns the package version string
+ * 
+ * @returns {string}
  */
 function readVersion() {
-  const pkg = JSON.parse(
-    readFileSync(join(HERE, '..', 'package.json'), 'utf8'),
-  );
+  const filePath = join(HERE, '..', 'package.json');
+  const fileContent = readFileSync(filePath, 'utf8');
+  const pkg = JSON.parse(fileContent);
   return pkg.version;
 }
