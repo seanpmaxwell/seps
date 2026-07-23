@@ -1,28 +1,18 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import DefaultConfig, { CONFIG_FILE_NAME } from './DefaultConfig';
 
 // ========================================================================= //
 //                                  Constants                                //
 // ========================================================================= //
 
-const CONFIG_FILE_NAME = 'seps-config.json';
-
 // Marker tokens written in source files: "// @reg Label", "/* @sec Label */".
 // These are fixed and not configurable.
-const REGION_TOKEN = '@reg';
-const SECTION_TOKEN = '@sec';
-
-// The built-in defaults, loaded from DefaultConfig.json next to this module.
-// Each language declares its file extensions, the comment syntax markers are
-// written in (open/close, close empty for line comments), and the bookends
-// used for the generated header lines (defaults to the comment syntax). The
-// marker regexes are built from these — no regexes in config files.
-const DefaultConfig = (() => {
-  const here = path.dirname(fileURLToPath(import.meta.url));
-  const pathFull = path.join(here, 'DefaultConfig.json');
-  return Object.freeze(JSON.parse(fs.readFileSync(pathFull, 'utf8')));
-})();
+const Markers = {
+  REGION: '@reg',
+  SECTION: '@sec',
+};
 
 const ConfigErrorMessages = {
   Extensions(lang) {
@@ -65,24 +55,6 @@ function insertSeparators(
   return walk(targetPath, langConfigArr, { dryRun, log, warn });
 }
 
-/**
- * Generate a seps-config.json in the given directory (default: the directory
- * seps is being run from) containing all the default settings. Refuses to
- * overwrite an existing config. Returns the path of the written file.
- *
- * @param {string} dir
- * @returns {string}
- */
-function initConfig(dir = process.cwd()) {
-  const configPath = path.join(dir, CONFIG_FILE_NAME);
-  if (fs.existsSync(configPath)) {
-    const message = `${CONFIG_FILE_NAME} already exists here, not overwriting`;
-    throw new Error(message);
-  }
-  fs.writeFileSync(configPath, `${stringifyConfig(DefaultConfig)}\n`, 'utf8');
-  return configPath;
-}
-
 // =========================== Private Helpers ============================= //
 
 /**
@@ -98,7 +70,9 @@ function initConfig(dir = process.cwd()) {
  */
 function loadConfig(cwd, log = console.log) {
   const configPath = path.join(cwd, CONFIG_FILE_NAME);
-  if (!fs.existsSync(configPath)) return DefaultConfig;
+  if (!fs.existsSync(configPath)) {
+    return DefaultConfig;
+  }
   // Load overrides from config file
   let overrides;
   try {
@@ -143,41 +117,15 @@ function configDirFor(targetPath) {
 /**
  * @private
  *
- * Serialize a config object like JSON.stringify(value, null, 2), but keep
- * arrays on a single line (e.g. "Markers": ["@reg", "@sec"]) instead of one
- * element per line. Config arrays only ever hold primitives.
- * 
- * @param {*} value 
- * @param {*} indent 
- * @returns 
- */
-function stringifyConfig(value, indent = '') {
-  if (Array.isArray(value)) {
-    return `[${value.map(item => JSON.stringify(item)).join(', ')}]`;
-  }
-  if (value && typeof value === 'object') {
-    const inner = `${indent}  `;
-    const entries = Object.entries(value).map(
-      ([key, val]) =>
-        `${inner}${JSON.stringify(key)}: ${stringifyConfig(val, inner)}`,
-    );
-    return `{\n${entries.join(',\n')}\n${indent}}`;
-  }
-  return JSON.stringify(value);
-}
-
-/**
- * @private
- * 
  * Compile a declarative language entry into the matchers used while walking:
  * a FILE_EXT regex and REGION/SECTION marker regexes built from the comment
  * syntax around the fixed marker tokens. CharacterLimit/FillerCharacter fall
  * back to the shared "All" settings.
- * 
- * @param {*} lang 
- * @param {*} entry 
- * @param {*} all 
- * @returns 
+ *
+ * @param {*} lang
+ * @param {*} entry
+ * @param {*} all
+ * @returns
  */
 function compileEntry(lang, entry, all) {
   const {
@@ -224,8 +172,8 @@ function compileEntry(lang, entry, all) {
   // Return
   return {
     FILE_EXT: new RegExp(`\\.(${exts.join('|')})$`),
-    REGION_MARKER: marker(REGION_TOKEN),
-    SECTION_MARKER: marker(SECTION_TOKEN),
+    REGION_MARKER: marker(Markers.REGION),
+    SECTION_MARKER: marker(Markers.SECTION),
     BOOKENDS: Bookends ?? (close ? [open, close] : [open, ` ${open.trim()}`]),
     CHAR_LIMIT: charLimit,
     FILLER: fillerChar,
@@ -235,9 +183,9 @@ function compileEntry(lang, entry, all) {
 
 /**
  * Escape regex special characters in a literal string.
- * 
- * @param {*} str 
- * @returns 
+ *
+ * @param {*} str
+ * @returns
  */
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -245,11 +193,11 @@ function escapeRegex(str) {
 
 /**
  * Recursively walk a path, rewriting markers in every supported file.
- * 
- * @param {*} targetPath 
- * @param {*} langConfigArr 
- * @param {*} param2 
- * @returns 
+ *
+ * @param {*} targetPath
+ * @param {*} langConfigArr
+ * @param {*} param2
+ * @returns {string[]}
  */
 function walk(targetPath, langConfigArr, { dryRun, log, warn }) {
   const updated = [];
@@ -287,7 +235,7 @@ function walk(targetPath, langConfigArr, { dryRun, log, warn }) {
 
 /**
  * @private
- * 
+ *
  * Determine whether to format a "section" or a "region".
  *
  * @param {string} text
@@ -330,33 +278,34 @@ function formatSeparators(text, paddingType, filePath, warn = console.warn) {
 
 /**
  * @private
- * 
+ *
  * Warn that a marker on the given (0-based) line has no label, and return the
  * line unchanged so nothing is inserted.
- * 
- * @param {*} line 
- * @param {*} filePath 
- * @param {*} index 
- * @param {*} warn 
- * @returns 
+ *
+ * @param {*} line
+ * @param {*} filePath
+ * @param {*} index
+ * @param {*} warn
+ * @returns
  */
 function warnNoLabel(line, filePath, index, warn) {
-  const message = `Warning: ${filePath}:${index + 1}: separator marker has ` + 
+  const message =
+    `Warning: ${filePath}:${index + 1}: separator marker has ` +
     'no label, skipping';
   warn(message);
   return line;
 }
 
 /**
- * @private 
- * 
+ * @private
+ *
  * Capitalize each word in a label (first letter upper, rest lower), unless the
  * language has DisableCapitalization set. Words that start or end with a
  * non-alphanumeric character are left untouched (e.g. "@decorator", "foo()").
- * 
- * @param {*} label 
- * @param {*} paddingType 
- * @returns 
+ *
+ * @param {*} label
+ * @param {*} paddingType
+ * @returns
  */
 function capitalizeLabel(label, paddingType) {
   if (paddingType.DISABLE_CAP) return label;
@@ -372,15 +321,15 @@ function capitalizeLabel(label, paddingType) {
 
 /**
  * @private
- * 
+ *
  * Build a single-line section header centered within `[open] = label = [close]`.
  * Filler fills up to the character limit and stops; a label too long to fit
  * simply gets no filler rather than pushing the line past the limit.
- * 
- * @param {*} label 
- * @param {*} paddingType 
- * @param {*} indent 
- * @returns 
+ *
+ * @param {*} label
+ * @param {*} paddingType
+ * @param {*} indent
+ * @returns
  */
 function formatSection(label, paddingType, indent) {
   const [open, close] = paddingType.BOOKENDS;
@@ -394,14 +343,14 @@ function formatSection(label, paddingType, indent) {
 
 /**
  * @private
- * 
+ *
  * Build a 3-line region header block with the label centered on the middle line.
  * Rule lines stop at the character limit: "// " + filler + " //".
- * 
- * @param {*} label 
- * @param {*} paddingType 
- * @param {*} indent 
- * @returns 
+ *
+ * @param {*} label
+ * @param {*} paddingType
+ * @param {*} indent
+ * @returns
  */
 function formatRegion(label, paddingType, indent) {
   const [open, close] = paddingType.BOOKENDS;
@@ -420,4 +369,3 @@ function formatRegion(label, paddingType, indent) {
 // ========================================================================= //
 
 export default insertSeparators;
-export { initConfig };

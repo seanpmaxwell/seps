@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import insertSeparators, { initConfig } from '../../src/insert-separators.js';
+import insertSeparators from '../../src/insertSeparators.js';
+import initializeDirectory from '../../src/initializeDirectory.js';
 
 // A fresh temp directory per test keeps each case isolated. seps falls back to
 // process.cwd() for config, and the project root has no seps-config.json, so a
@@ -434,12 +435,12 @@ describe('language comment syntaxes', () => {
 });
 
 // ========================================================================= //
-//                                 initConfig                                //
+//                          initializeDirectory()                            //
 // ========================================================================= //
 
-describe('initConfig', () => {
+describe('initializeDirectory', () => {
   it('writes a parseable config with defaults and returns its path', () => {
-    const p = initConfig(dir);
+    const p = initializeDirectory(dir);
     expect(p).toBe(path.join(dir, 'seps-config.json'));
     const parsed = JSON.parse(fs.readFileSync(p, 'utf8'));
     expect(parsed.All).toMatchObject({
@@ -450,24 +451,24 @@ describe('initConfig', () => {
   });
 
   it('keeps arrays on a single line', () => {
-    initConfig(dir);
+    initializeDirectory(dir);
     const content = read('seps-config.json');
     expect(content).toContain('"Extensions": ["ts", "tsx"');
     expect(content).not.toMatch(/"ts",\n/);
   });
 
   it('ends with a trailing newline', () => {
-    initConfig(dir);
+    initializeDirectory(dir);
     expect(read('seps-config.json').endsWith('\n')).toBe(true);
   });
 
   it('refuses to overwrite an existing config', () => {
-    initConfig(dir);
-    expect(() => initConfig(dir)).toThrow(/already exists/);
+    initializeDirectory(dir);
+    expect(() => initializeDirectory(dir)).toThrow(/already exists/);
   });
 
   it('produces a config that seps then accepts', () => {
-    initConfig(dir);
+    initializeDirectory(dir);
     write('a.js', '// @sec hello\n');
     run();
     expect(read('a.js').split('\n')[0].length).toBe(79);
