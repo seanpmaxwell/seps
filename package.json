@@ -13,9 +13,9 @@
   "bin": {
     "seps": "bin/cli.js"
   },
-  "main": "lib/insert-separators.js",
+  "main": "lib/index.js",
   "exports": {
-    ".": "./lib/insert-separators.js"
+    ".": "./lib/index.js"
   },
   "files": [
     "bin",

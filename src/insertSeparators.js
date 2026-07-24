@@ -1,28 +1,19 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import DefaultConfig from './common/DefaultConfig';
+import { CONFIG_FILE_NAME } from './common/constants';
+import loadJsonFile from './common/utils/loadJsonFile';
 
 // ========================================================================= //
 //                                  Constants                                //
 // ========================================================================= //
 
-const CONFIG_FILE_NAME = 'seps-config.json';
-
 // Marker tokens written in source files: "// @reg Label", "/* @sec Label */".
 // These are fixed and not configurable.
-const REGION_TOKEN = '@reg';
-const SECTION_TOKEN = '@sec';
-
-// The built-in defaults, loaded from DefaultConfig.json next to this module.
-// Each language declares its file extensions, the comment syntax markers are
-// written in (open/close, close empty for line comments), and the bookends
-// used for the generated header lines (defaults to the comment syntax). The
-// marker regexes are built from these — no regexes in config files.
-const DefaultConfig = (() => {
-  const here = path.dirname(fileURLToPath(import.meta.url));
-  const pathFull = path.join(here, 'DefaultConfig.json');
-  return Object.freeze(JSON.parse(fs.readFileSync(pathFull, 'utf8')));
-})();
+const Markers = {
+  REGION: '@reg',
+  SECTION: '@sec',
+};
 
 const ConfigErrorMessages = {
   Extensions(lang) {
@@ -42,6 +33,12 @@ const ConfigErrorMessages = {
   },
 };
 
+const DefaultOptions = {
+  dryRun: false,
+  printLog: value => console.log(value),
+  printWarn: value => console.warn(value),
+};
+
 // ========================================================================= //
 //                                  Functions                                //
 // ========================================================================= //
@@ -51,58 +48,40 @@ const ConfigErrorMessages = {
  * Returns the list of file paths that were updated.
  *
  * @param {string} targetPath
- * @param {object} param1
+ * @param {object} options
  * @returns {string[]}
  */
-function insertSeparators(
-  targetPath,
-  { dryRun = false, log = console.log, warn = console.warn } = {},
-) {
-  const { All, ...languages } = loadConfig(configDirFor(targetPath), log);
-  const langConfigArr = Object.entries(languages).map(([lang, entry]) =>
+function insertSeparators(targetPath, options = DefaultOptions) {
+  const dirPath = configDirFor(targetPath);
+  const { All, ...languages } = loadConfig(dirPath, options.printLog);
+  const languagesEntries = Object.entries(languages);
+  const langConfigArr = languagesEntries.map(([lang, entry]) =>
     compileEntry(lang, entry, All),
   );
-  return walk(targetPath, langConfigArr, { dryRun, log, warn });
-}
-
-/**
- * Generate a seps-config.json in the given directory (default: the directory
- * seps is being run from) containing all the default settings. Refuses to
- * overwrite an existing config. Returns the path of the written file.
- *
- * @param {string} dir
- * @returns {string}
- */
-function initConfig(dir = process.cwd()) {
-  const configPath = path.join(dir, CONFIG_FILE_NAME);
-  if (fs.existsSync(configPath)) {
-    const message = `${CONFIG_FILE_NAME} already exists here, not overwriting`;
-    throw new Error(message);
-  }
-  fs.writeFileSync(configPath, `${stringifyConfig(DefaultConfig)}\n`, 'utf8');
-  return configPath;
+  return walk(targetPath, langConfigArr, options);
 }
 
 // =========================== Private Helpers ============================= //
 
 /**
  * @private
- *
  * Resolve the effective config: DefaultConfig, overridden per-language by any
  * seps-config.json found in the config directory. Unknown language keys in the
  * JSON define new languages.
  *
  * @param {string} cwd
- * @param {function} log
+ * @param {function} printLog
  * @returns {object}
  */
-function loadConfig(cwd, log = console.log) {
+function loadConfig(cwd, printLog) {
   const configPath = path.join(cwd, CONFIG_FILE_NAME);
-  if (!fs.existsSync(configPath)) return DefaultConfig;
+  if (!fs.existsSync(configPath)) {
+    return DefaultConfig;
+  }
   // Load overrides from config file
   let overrides;
   try {
-    overrides = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    overrides = loadJsonFile(configPath);
   } catch (err) {
     const message = `invalid ${CONFIG_FILE_NAME}: ${err.message}`;
     throw new Error(message, { cause: err });
@@ -117,14 +96,13 @@ function loadConfig(cwd, log = console.log) {
   for (const lang of set) {
     config[lang] = { ...DefaultConfig[lang], ...langOverrides[lang] };
   }
-  if (log) log(`Using config overrides from: ${configPath}`);
+  printLog(`Using config overrides from: ${configPath}`);
   // Rreturn
   return config;
 }
 
 /**
  * @private
- *
  * Directory whose seps-config.json applies to a target path: the target's own
  * directory if it has one, otherwise the directory seps is being run from.
  *
@@ -142,51 +120,24 @@ function configDirFor(targetPath) {
 
 /**
  * @private
- *
- * Serialize a config object like JSON.stringify(value, null, 2), but keep
- * arrays on a single line (e.g. "Markers": ["@reg", "@sec"]) instead of one
- * element per line. Config arrays only ever hold primitives.
- * 
- * @param {*} value 
- * @param {*} indent 
- * @returns 
- */
-function stringifyConfig(value, indent = '') {
-  if (Array.isArray(value)) {
-    return `[${value.map(item => JSON.stringify(item)).join(', ')}]`;
-  }
-  if (value && typeof value === 'object') {
-    const inner = `${indent}  `;
-    const entries = Object.entries(value).map(
-      ([key, val]) =>
-        `${inner}${JSON.stringify(key)}: ${stringifyConfig(val, inner)}`,
-    );
-    return `{\n${entries.join(',\n')}\n${indent}}`;
-  }
-  return JSON.stringify(value);
-}
-
-/**
- * @private
- * 
  * Compile a declarative language entry into the matchers used while walking:
  * a FILE_EXT regex and REGION/SECTION marker regexes built from the comment
  * syntax around the fixed marker tokens. CharacterLimit/FillerCharacter fall
  * back to the shared "All" settings.
- * 
- * @param {*} lang 
- * @param {*} entry 
- * @param {*} all 
- * @returns 
+ *
+ * @param {string} lang
+ * @param {object} entry
+ * @param {object} all
+ * @returns {object}
  */
 function compileEntry(lang, entry, all) {
   const {
     Extensions,
     Comment,
-    Bookends,
     CharacterLimit,
     FillerCharacter,
     DisableCapitalization,
+    Bookends,
   } = entry;
   // Check the configuration for errors
   if (!Array.isArray(Extensions) || Extensions.length === 0) {
@@ -224,8 +175,8 @@ function compileEntry(lang, entry, all) {
   // Return
   return {
     FILE_EXT: new RegExp(`\\.(${exts.join('|')})$`),
-    REGION_MARKER: marker(REGION_TOKEN),
-    SECTION_MARKER: marker(SECTION_TOKEN),
+    REGION_MARKER: marker(Markers.REGION),
+    SECTION_MARKER: marker(Markers.SECTION),
     BOOKENDS: Bookends ?? (close ? [open, close] : [open, ` ${open.trim()}`]),
     CHAR_LIMIT: charLimit,
     FILLER: fillerChar,
@@ -234,24 +185,26 @@ function compileEntry(lang, entry, all) {
 }
 
 /**
+ * @private
  * Escape regex special characters in a literal string.
- * 
- * @param {*} str 
- * @returns 
+ *
+ * @param {string} str
+ * @returns {string}
  */
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**
+ * @private
  * Recursively walk a path, rewriting markers in every supported file.
- * 
- * @param {*} targetPath 
- * @param {*} langConfigArr 
- * @param {*} param2 
- * @returns 
+ *
+ * @param {string} targetPath
+ * @param {object[]} langConfigArr
+ * @param {object} options
+ * @returns {string[]}
  */
-function walk(targetPath, langConfigArr, { dryRun, log, warn }) {
+function walk(targetPath, langConfigArr, options) {
   const updated = [];
   const stat = fs.statSync(targetPath);
   // Go recursive if directory
@@ -259,13 +212,9 @@ function walk(targetPath, langConfigArr, { dryRun, log, warn }) {
     const entries = fs.readdirSync(targetPath, { withFileTypes: true });
     for (const entry of entries) {
       if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
-      updated.push(
-        ...walk(path.join(targetPath, entry.name), langConfigArr, {
-          dryRun,
-          log,
-          warn,
-        }),
-      );
+      const fileFullPath = path.join(targetPath, entry.name);
+      const result = walk(fileFullPath, langConfigArr, options);
+      updated.push(...result);
     }
     return updated;
   }
@@ -275,10 +224,19 @@ function walk(targetPath, langConfigArr, { dryRun, log, warn }) {
   if (!paddingType) return updated;
   // Write the separator comment
   const content = fs.readFileSync(targetPath, 'utf8');
-  const next = formatSeparators(content, paddingType, targetPath, warn);
+  const next = formatSeparators(
+    content,
+    paddingType,
+    targetPath,
+    options.printWarn,
+  );
   if (next !== content) {
-    if (!dryRun) fs.writeFileSync(targetPath, next, 'utf8');
-    if (log) log(`${dryRun ? 'Would update' : 'Updated'}: ${targetPath}`);
+    if (!options.dryRun) {
+      fs.writeFileSync(targetPath, next, 'utf8');
+    }
+    options.printLog(
+      `${options.dryRun ? 'Would update' : 'Updated'}: ${targetPath}`,
+    );
     updated.push(targetPath);
   }
   // Return
@@ -287,16 +245,15 @@ function walk(targetPath, langConfigArr, { dryRun, log, warn }) {
 
 /**
  * @private
- * 
  * Determine whether to format a "section" or a "region".
  *
  * @param {string} text
  * @param {object[]} paddingType
  * @param {string} filePath
- * @param {function} warn
+ * @param {function} printWarn
  * @returns {string}
  */
-function formatSeparators(text, paddingType, filePath, warn = console.warn) {
+function formatSeparators(text, paddingType, filePath, printWarn) {
   return text
     .split('\n')
     .map((line, index) => {
@@ -305,7 +262,7 @@ function formatSeparators(text, paddingType, filePath, warn = console.warn) {
       // Insert "section" separator
       if (sectionMatch) {
         const label = sectionMatch[1]?.trim() ?? '';
-        if (!label) return warnNoLabel(line, filePath, index, warn);
+        if (!label) return warnNoLabel(line, filePath, index, printWarn);
         return formatSection(
           capitalizeLabel(label, paddingType),
           paddingType,
@@ -316,7 +273,7 @@ function formatSeparators(text, paddingType, filePath, warn = console.warn) {
       const regionMatch = line.match(paddingType.REGION_MARKER);
       if (regionMatch) {
         const label = regionMatch[1]?.trim() ?? '';
-        if (!label) return warnNoLabel(line, filePath, index, warn);
+        if (!label) return warnNoLabel(line, filePath, index, printWarn);
         return formatRegion(
           capitalizeLabel(label, paddingType),
           paddingType,
@@ -330,33 +287,32 @@ function formatSeparators(text, paddingType, filePath, warn = console.warn) {
 
 /**
  * @private
- * 
  * Warn that a marker on the given (0-based) line has no label, and return the
  * line unchanged so nothing is inserted.
- * 
- * @param {*} line 
- * @param {*} filePath 
- * @param {*} index 
- * @param {*} warn 
- * @returns 
+ *
+ * @param {*} line
+ * @param {*} filePath
+ * @param {*} index
+ * @param {*} printWarn
+ * @returns
  */
-function warnNoLabel(line, filePath, index, warn) {
-  const message = `Warning: ${filePath}:${index + 1}: separator marker has ` + 
+function warnNoLabel(line, filePath, index, printWarn) {
+  const message =
+    `Warning: ${filePath}:${index + 1}: separator marker has ` +
     'no label, skipping';
-  warn(message);
+  printWarn(message);
   return line;
 }
 
 /**
- * @private 
- * 
+ * @private
  * Capitalize each word in a label (first letter upper, rest lower), unless the
  * language has DisableCapitalization set. Words that start or end with a
  * non-alphanumeric character are left untouched (e.g. "@decorator", "foo()").
- * 
- * @param {*} label 
- * @param {*} paddingType 
- * @returns 
+ *
+ * @param {*} label
+ * @param {*} paddingType
+ * @returns
  */
 function capitalizeLabel(label, paddingType) {
   if (paddingType.DISABLE_CAP) return label;
@@ -372,15 +328,14 @@ function capitalizeLabel(label, paddingType) {
 
 /**
  * @private
- * 
  * Build a single-line section header centered within `[open] = label = [close]`.
  * Filler fills up to the character limit and stops; a label too long to fit
  * simply gets no filler rather than pushing the line past the limit.
- * 
- * @param {*} label 
- * @param {*} paddingType 
- * @param {*} indent 
- * @returns 
+ *
+ * @param {*} label
+ * @param {*} paddingType
+ * @param {*} indent
+ * @returns
  */
 function formatSection(label, paddingType, indent) {
   const [open, close] = paddingType.BOOKENDS;
@@ -394,14 +349,13 @@ function formatSection(label, paddingType, indent) {
 
 /**
  * @private
- * 
  * Build a 3-line region header block with the label centered on the middle line.
  * Rule lines stop at the character limit: "// " + filler + " //".
- * 
- * @param {*} label 
- * @param {*} paddingType 
- * @param {*} indent 
- * @returns 
+ *
+ * @param {*} label
+ * @param {*} paddingType
+ * @param {*} indent
+ * @returns
  */
 function formatRegion(label, paddingType, indent) {
   const [open, close] = paddingType.BOOKENDS;
@@ -420,4 +374,3 @@ function formatRegion(label, paddingType, indent) {
 // ========================================================================= //
 
 export default insertSeparators;
-export { initConfig };
