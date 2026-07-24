@@ -6,7 +6,7 @@
 // written in (open/close, close empty for line comments), and the bookends
 // used for the generated header lines (defaults to the comment syntax). The
 // marker regexes are built from these — no regexes in config files.
-const DefaultConfig = Object.freeze({
+const DefaultConfig = {
   All: {
     CharacterLimit: 79,
     DisableCapitalization: false,
@@ -62,7 +62,7 @@ const DefaultConfig = Object.freeze({
     Comment: ['-- ', ''],
     Bookends: ['-- ', ' --'],
   },
-});
+};
 
 // ========================================================================= //
 //                                     Export                                //

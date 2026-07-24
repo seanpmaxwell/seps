@@ -39,6 +39,10 @@ const DefaultOptions = {
   printWarn: value => console.warn(value),
 };
 
+// pick up here, add bash scripts to "commit" and "commit + squash"
+// double check things in the playground still work
+// convert entire project (src/,test/) to use typescript (tsgo), bin/ and scripts/ don't need it 
+
 // ========================================================================= //
 //                                  Functions                                //
 // ========================================================================= //
@@ -55,10 +59,10 @@ function insertSeparators(targetPath, options = DefaultOptions) {
   const dirPath = configDirFor(targetPath);
   const { All, ...languages } = loadConfig(dirPath, options.printLog);
   const languagesEntries = Object.entries(languages);
-  const langConfigArr = languagesEntries.map(([lang, entry]) =>
-    compileEntry(lang, entry, All),
+  const configuredLanguagesArr = languagesEntries.map(([langKey, entry]) =>
+    configureLangEntry(langKey, entry, All),
   );
-  return walk(targetPath, langConfigArr, options);
+  return walk(targetPath, configuredLanguagesArr, options);
 }
 
 // =========================== Private Helpers ============================= //
@@ -97,7 +101,7 @@ function loadConfig(cwd, printLog) {
     config[lang] = { ...DefaultConfig[lang], ...langOverrides[lang] };
   }
   printLog(`Using config overrides from: ${configPath}`);
-  // Rreturn
+  // Return
   return config;
 }
 
@@ -110,12 +114,10 @@ function loadConfig(cwd, printLog) {
  * @returns {string}
  */
 function configDirFor(targetPath) {
-  const targetDir = fs.statSync(targetPath).isDirectory()
-    ? targetPath
-    : path.dirname(targetPath);
-  return fs.existsSync(path.join(targetDir, CONFIG_FILE_NAME))
-    ? targetDir
-    : process.cwd();
+  const isTargetDir = fs.statSync(targetPath).isDirectory();
+  const targetPathFull = isTargetDir ? targetPath : path.dirname(targetPath);
+  const configFilePath = path.join(targetPathFull, CONFIG_FILE_NAME);
+  return fs.existsSync(configFilePath) ? targetPathFull : process.cwd();
 }
 
 /**
@@ -130,7 +132,7 @@ function configDirFor(targetPath) {
  * @param {object} all
  * @returns {object}
  */
-function compileEntry(lang, entry, all) {
+function configureLangEntry(lang, entry, all) {
   const {
     Extensions,
     Comment,
@@ -219,14 +221,14 @@ function walk(targetPath, langConfigArr, options) {
     return updated;
   }
   // Check the patting type
-  const paddingType =
+  const langConfig =
     langConfigArr.find(type => type.FILE_EXT.test(targetPath)) ?? null;
-  if (!paddingType) return updated;
+  if (!langConfig) return updated;
   // Write the separator comment
   const content = fs.readFileSync(targetPath, 'utf8');
   const next = formatSeparators(
     content,
-    paddingType,
+    langConfig,
     targetPath,
     options.printWarn,
   );
@@ -244,39 +246,41 @@ function walk(targetPath, langConfigArr, options) {
 }
 
 /**
+ * // pick up here, refactor so that this function is just for the .map part
+ * 
  * @private
  * Determine whether to format a "section" or a "region".
  *
  * @param {string} text
- * @param {object[]} paddingType
+ * @param {object[]} langConfig
  * @param {string} filePath
  * @param {function} printWarn
  * @returns {string}
  */
-function formatSeparators(text, paddingType, filePath, printWarn) {
+function formatSeparators(text, langConfig, filePath, printWarn) {
   return text
     .split('\n')
     .map((line, index) => {
       const indent = line.match(/^(\s*)/)[1];
-      const sectionMatch = line.match(paddingType.SECTION_MARKER);
+      const sectionMatch = line.match(langConfig.SECTION_MARKER);
       // Insert "section" separator
       if (sectionMatch) {
         const label = sectionMatch[1]?.trim() ?? '';
-        if (!label) return warnNoLabel(line, filePath, index, printWarn);
+        if (!label) return printNoLabelWarning(filePath, index, printWarn, line);
         return formatSection(
-          capitalizeLabel(label, paddingType),
-          paddingType,
+          capitalizeLabel(label, langConfig),
+          langConfig,
           indent,
         );
       }
       // Insert "region" separator
-      const regionMatch = line.match(paddingType.REGION_MARKER);
+      const regionMatch = line.match(langConfig.REGION_MARKER);
       if (regionMatch) {
         const label = regionMatch[1]?.trim() ?? '';
-        if (!label) return warnNoLabel(line, filePath, index, printWarn);
+        if (!label) return printNoLabelWarning(filePath, index, printWarn, line);
         return formatRegion(
-          capitalizeLabel(label, paddingType),
-          paddingType,
+          capitalizeLabel(label, langConfig),
+          langConfig,
           indent,
         );
       }
@@ -290,16 +294,16 @@ function formatSeparators(text, paddingType, filePath, printWarn) {
  * Warn that a marker on the given (0-based) line has no label, and return the
  * line unchanged so nothing is inserted.
  *
- * @param {*} line
- * @param {*} filePath
- * @param {*} index
- * @param {*} printWarn
- * @returns
+ * @param {string} line
+ * @param {string} filePath
+ * @param {number} index
+ * @param {function} printWarn
+ * @returns {string}
  */
-function warnNoLabel(line, filePath, index, printWarn) {
+function printNoLabelWarning(filePath, index, printWarn, line) {
   const message =
-    `Warning: ${filePath}:${index + 1}: separator marker has ` +
-    'no label, skipping';
+    `Warning: ${filePath}:${index + 1}: separator marker has no label, ` +
+    'skipping';
   printWarn(message);
   return line;
 }
@@ -310,17 +314,19 @@ function warnNoLabel(line, filePath, index, printWarn) {
  * language has DisableCapitalization set. Words that start or end with a
  * non-alphanumeric character are left untouched (e.g. "@decorator", "foo()").
  *
- * @param {*} label
- * @param {*} paddingType
- * @returns
+ * @param {string} label
+ * @param {object} langConfig
+ * @returns {string}
  */
-function capitalizeLabel(label, paddingType) {
-  if (paddingType.DISABLE_CAP) return label;
+function capitalizeLabel(label, langConfig) {
+  if (langConfig.DISABLE_CAP) return label;
   return label
     .split(/\s+/)
     .map(word => {
-      const isAlnum = ch => /[a-z0-9]/i.test(ch);
-      if (!isAlnum(word[0]) || !isAlnum(word[word.length - 1])) return word;
+      const getIsAlphaNum = ch => /[a-z0-9]/i.test(ch);
+      if (!getIsAlphaNum(word[0]) || !getIsAlphaNum(word[word.length - 1])) {
+        return word
+      };
       return word[0].toUpperCase() + word.slice(1).toLowerCase();
     })
     .join(' ');
@@ -332,15 +338,15 @@ function capitalizeLabel(label, paddingType) {
  * Filler fills up to the character limit and stops; a label too long to fit
  * simply gets no filler rather than pushing the line past the limit.
  *
- * @param {*} label
- * @param {*} paddingType
- * @param {*} indent
- * @returns
+ * @param {string} label
+ * @param {object} langConfig
+ * @param {string} indent
+ * @returns {string}
  */
-function formatSection(label, paddingType, indent) {
-  const [open, close] = paddingType.BOOKENDS;
-  const filler = paddingType.FILLER;
-  const lineLen = paddingType.CHAR_LIMIT - indent.length;
+function formatSection(label, langConfig, indent) {
+  const [open, close] = langConfig.BOOKENDS;
+  const filler = langConfig.FILLER;
+  const lineLen = langConfig.CHAR_LIMIT - indent.length;
   const available = lineLen - open.length - close.length - label.length - 2;
   const left = Math.max(Math.ceil(available / 2), 0);
   const right = Math.max(Math.floor(available / 2), 0);
@@ -352,10 +358,10 @@ function formatSection(label, paddingType, indent) {
  * Build a 3-line region header block with the label centered on the middle line.
  * Rule lines stop at the character limit: "// " + filler + " //".
  *
- * @param {*} label
- * @param {*} paddingType
- * @param {*} indent
- * @returns
+ * @param {string} label
+ * @param {object} paddingType
+ * @param {string} indent
+ * @returns {string}
  */
 function formatRegion(label, paddingType, indent) {
   const [open, close] = paddingType.BOOKENDS;

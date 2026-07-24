@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
+import path from 'path';
 import { readFileSync } from 'fs';
-import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { insertSeparators, initializeDirectory, loadJsonFile } from '../lib';
 
@@ -9,12 +9,11 @@ import { insertSeparators, initializeDirectory, loadJsonFile } from '../lib';
 //                                  Constants                                //
 // ========================================================================= //
 
-// PWD => "Present working directory"
-const PWD = dirname(fileURLToPath(import.meta.url));
+const CURR_DIR = path.dirname(fileURLToPath(import.meta.url));
 
 // What to print to the console for the `--help` command line argument.
 const HELP_ARG_CONTENT = (() => {
-  const helpContentFilePath = join(PWD, 'help.txt');
+  const helpContentFilePath = join(CURR_DIR, 'help.txt');
   return readFileSync(helpContentFilePath, 'utf8');
 })();
 
@@ -123,6 +122,6 @@ function processCommandLineArgs(args) {
  * @returns {string}
  */
 function readVersion() {
-  const filePath = join(PWD, '..', 'package.json');
+  const filePath = path.join(CURR_DIR, '..', 'package.json');
   return loadJsonFile(filePath).version;
 }
