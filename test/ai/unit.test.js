@@ -442,6 +442,7 @@ describe('initializeDirectory', () => {
   it('writes a parseable config with defaults and returns its path', () => {
     const p = initializeDirectory(dir);
     expect(p).toBe(path.join(dir, 'seps-config.json'));
+    // pick up here
     const parsed = JSON.parse(fs.readFileSync(p, 'utf8'));
     expect(parsed.All).toMatchObject({
       CharacterLimit: 79,

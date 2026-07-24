@@ -1,7 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import DefaultConfig, { CONFIG_FILE_NAME } from './DefaultConfig';
+import DefaultConfig from './common/DefaultConfig';
+import { CONFIG_FILE_NAME } from './common/constants';
+import loadJsonFile from './common/utils/loadJsonFile';
 
 // ========================================================================= //
 //                                  Constants                                //
@@ -41,14 +43,14 @@ const ConfigErrorMessages = {
  * Returns the list of file paths that were updated.
  *
  * @param {string} targetPath
- * @param {object} param1
+ * @param {object} options
  * @returns {string[]}
  */
-function insertSeparators(
-  targetPath,
-  { dryRun = false, log = console.log, warn = console.warn } = {},
-) {
-  const { All, ...languages } = loadConfig(configDirFor(targetPath), log);
+function insertSeparators(targetPath, options = {}) {
+  // pick up here, move default options to a constant
+  const { dryRun = false, log = console.log, warn = console.warn } = options;
+  const dirPath = configDirFor(targetPath);
+  const { All, ...languages } = loadConfig(dirPath, log);
   const langConfigArr = Object.entries(languages).map(([lang, entry]) =>
     compileEntry(lang, entry, All),
   );
@@ -76,7 +78,7 @@ function loadConfig(cwd, log = console.log) {
   // Load overrides from config file
   let overrides;
   try {
-    overrides = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    overrides = loadJsonFile(configPath);
   } catch (err) {
     const message = `invalid ${CONFIG_FILE_NAME}: ${err.message}`;
     throw new Error(message, { cause: err });

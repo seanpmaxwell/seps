@@ -5,6 +5,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import insertSeparators from '../lib/insertSeparators.js';
 import initializeDirectory from '../lib/initializeDirectory.js';
+import loadJsonFile from '../lib/common/utils/loadJsonFile';
 
 // ========================================================================= //
 //                                  Constants                                //
@@ -120,6 +121,5 @@ function processCommandLineArgs(args) {
  */
 function readVersion() {
   const filePath = join(PWD, '..', 'package.json');
-  const fileContent = readFileSync(filePath, 'utf8');
-  return JSON.parse(fileContent).version;
+  return loadJsonFile(filePath).version;
 }
