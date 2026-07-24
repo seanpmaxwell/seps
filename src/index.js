@@ -1,5 +1,6 @@
 import insertSeparators from './insertSeparators.js';
 import initializeDirectory from './initializeDirectory.js';
-import loadJsonFile from './common/utils/loadJsonFile';
+import loadJsonFile from './common/utils/loadJsonFile.js';
 
-export default { insertSeparators, initializeDirectory, loadJsonFile };
+export { insertSeparators, initializeDirectory, loadJsonFile };
+export default insertSeparators;

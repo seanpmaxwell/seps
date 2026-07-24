@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import DefaultConfig from './common/DefaultConfig';
 import { CONFIG_FILE_NAME } from './common/constants';
 import loadJsonFile from './common/utils/loadJsonFile';

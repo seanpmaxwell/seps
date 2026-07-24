@@ -21,9 +21,9 @@ function customStringifyObject(value, indent = '') {
       return `[${stringArr.join(', ')}]`;
     }
     const inner = `${indent}  `;
-    const items = value.map((item) => {
+    const items = value.map(item => {
       const nestedObjStr = customStringifyObject(item, inner);
-      return `${inner}${nestedObjStr}`
+      return `${inner}${nestedObjStr}`;
     });
     const arrStr = items.join(',\n');
     return `[\n${arrStr}\n${indent}]`;
@@ -46,7 +46,7 @@ function customStringifyObject(value, indent = '') {
 
 /**
  * @private
- * 
+ *
  * Check if the value is not an object.
  *
  * @param {unknown} value

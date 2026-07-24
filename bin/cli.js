@@ -3,9 +3,11 @@
 import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import insertSeparators from '../lib/insertSeparators.js';
-import initializeDirectory from '../lib/initializeDirectory.js';
-import loadJsonFile from '../lib/common/utils/loadJsonFile';
+import {
+  insertSeparators,
+  initializeDirectory,
+  loadJsonFile,
+} from '../lib/index.js';
 
 // ========================================================================= //
 //                                  Constants                                //
@@ -49,8 +51,13 @@ function main() {
     }
     return;
   }
-  // Process other command line arguments (besides `init`)
-  const { paths, dryRun } = processCommandLineArgs(args);
+  // Process other command line arguments (besides `init`). A null result means
+  // the args were fully handled already (e.g. --help/--version), so stop here.
+  const result = processCommandLineArgs(args);
+  if (!result) {
+    return;
+  }
+  const { paths, dryRun } = result;
   // Run insertSeparators()
   let total = 0;
   for (const p of paths) {
@@ -101,9 +108,9 @@ function processCommandLineArgs(args) {
         if (arg.startsWith('-')) {
           process.stderr.write(`seps: unknown option '${arg}'\n`);
           process.exitCode = 1;
-          return;
+          return null;
         }
-        paths.push(arg);
+        retVal.paths.push(arg);
     }
   }
   // If no paths, use the current directory.
