@@ -60,7 +60,6 @@ function insertSeparators(targetPath, options = {}) {
 
 /**
  * @private
- *
  * Resolve the effective config: DefaultConfig, overridden per-language by any
  * seps-config.json found in the config directory. Unknown language keys in the
  * JSON define new languages.
@@ -183,6 +182,7 @@ function compileEntry(lang, entry, all) {
 }
 
 /**
+ * @private
  * Escape regex special characters in a literal string.
  *
  * @param {*} str
@@ -193,6 +193,7 @@ function escapeRegex(str) {
 }
 
 /**
+ * @private
  * Recursively walk a path, rewriting markers in every supported file.
  *
  * @param {*} targetPath
@@ -236,7 +237,6 @@ function walk(targetPath, langConfigArr, { dryRun, log, warn }) {
 
 /**
  * @private
- *
  * Determine whether to format a "section" or a "region".
  *
  * @param {string} text
@@ -279,7 +279,6 @@ function formatSeparators(text, paddingType, filePath, warn = console.warn) {
 
 /**
  * @private
- *
  * Warn that a marker on the given (0-based) line has no label, and return the
  * line unchanged so nothing is inserted.
  *
@@ -299,7 +298,6 @@ function warnNoLabel(line, filePath, index, warn) {
 
 /**
  * @private
- *
  * Capitalize each word in a label (first letter upper, rest lower), unless the
  * language has DisableCapitalization set. Words that start or end with a
  * non-alphanumeric character are left untouched (e.g. "@decorator", "foo()").
@@ -322,7 +320,6 @@ function capitalizeLabel(label, paddingType) {
 
 /**
  * @private
- *
  * Build a single-line section header centered within `[open] = label = [close]`.
  * Filler fills up to the character limit and stops; a label too long to fit
  * simply gets no filler rather than pushing the line past the limit.
@@ -344,7 +341,6 @@ function formatSection(label, paddingType, indent) {
 
 /**
  * @private
- *
  * Build a 3-line region header block with the label centered on the middle line.
  * Rule lines stop at the character limit: "// " + filler + " //".
  *

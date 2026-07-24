@@ -3,6 +3,7 @@ import path from 'path';
 import DefaultConfig from './common/DefaultConfig';
 import { CONFIG_FILE_NAME } from './common/constants';
 import customStringifyObject from './common/utils/customStringifyObject';
+import saveJsonFile from './common/utils/saveJsonFile';
 
 // ========================================================================= //
 //                                  Constants                                //
@@ -28,9 +29,8 @@ function initializeDirectory(dir = process.cwd()) {
   if (fs.existsSync(configPath)) {
     throw new Error(CONFIG_FILE_ALREADY_EXISTS_ERROR);
   }
-  // Setup file content
-  const configFileContent = customStringifyObject(DefaultConfig);
-  fs.writeFileSync(configPath, `${configFileContent}\n`, 'utf8');
+  // Save file content to JSON file
+  saveJsonFile(configPath, DefaultConfig, customStringifyObject);
   // Return filepath
   return configPath;
 }

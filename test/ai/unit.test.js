@@ -2,8 +2,12 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import insertSeparators from '../../src/insertSeparators.js';
-import initializeDirectory from '../../src/initializeDirectory.js';
+
+import { insertSeparators, initializeDirectory, loadJsonFile } from '../../src';
+
+// ========================================================================= //
+//                                      Run                                  //
+// ========================================================================= //
 
 // A fresh temp directory per test keeps each case isolated. seps falls back to
 // process.cwd() for config, and the project root has no seps-config.json, so a
@@ -442,8 +446,7 @@ describe('initializeDirectory', () => {
   it('writes a parseable config with defaults and returns its path', () => {
     const p = initializeDirectory(dir);
     expect(p).toBe(path.join(dir, 'seps-config.json'));
-    // pick up here
-    const parsed = JSON.parse(fs.readFileSync(p, 'utf8'));
+    const parsed = loadJsonFile(p);
     expect(parsed.All).toMatchObject({
       CharacterLimit: 79,
       FillerCharacter: '=',

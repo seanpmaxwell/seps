@@ -1,10 +1,10 @@
 {
   "All": {
-    "CharacterLimit": 119,
+    "CharacterLimit": 79,
+    "DisableCapitalization": false,
     "FillerCharacter": "="
   },
   "JavaScript": {
-    "CharacterLimit": 79,
     "Extensions": ["ts", "tsx", "js", "jsx", "mjs", "cjs"],
     "Comment": ["// ", ""],
     "Bookends": ["// ", " //"]
@@ -19,20 +19,38 @@
     "Comment": ["/* ", " */"],
     "Bookends": ["/* ", " */"]
   },
-  "Python": {
-    "Extensions": ["py"],
-    "Comment": ["# ", ""],
-    "Bookends": ["# ", " #"]
+  "C": {
+    "Extensions": ["c", "h"],
+    "Comment": ["// ", ""],
+    "Bookends": ["// ", " //"]
+  },
+  "Cpp": {
+    "Extensions": ["cpp", "cc", "cxx", "hpp", "hh", "hxx"],
+    "Comment": ["// ", ""],
+    "Bookends": ["// ", " //"]
+  },
+  "Go": {
+    "Extensions": ["go"],
+    "Comment": ["// ", ""],
+    "Bookends": ["// ", " //"]
+  },
+  "Rust": {
+    "Extensions": ["rs"],
+    "Comment": ["// ", ""],
+    "Bookends": ["// ", " //"]
+  },
+  "Php": {
+    "Extensions": ["php"],
+    "Comment": ["// ", ""],
+    "Bookends": ["// ", " //"]
   },
   "Ruby": {
     "Extensions": ["rb"],
-    "FillerCharacter": "*",
     "Comment": ["# ", ""],
     "Bookends": ["# ", " #"]
   },
   "Sql": {
     "Extensions": ["sql"],
-    "DisableCapitalization": true,
     "Comment": ["-- ", ""],
     "Bookends": ["-- ", " --"]
   }
