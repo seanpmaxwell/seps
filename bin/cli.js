@@ -3,11 +3,7 @@
 import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import {
-  insertSeparators,
-  initializeDirectory,
-  loadJsonFile,
-} from '../lib/index.js';
+import { insertSeparators, initializeDirectory, loadJsonFile } from '../lib';
 
 // ========================================================================= //
 //                                  Constants                                //

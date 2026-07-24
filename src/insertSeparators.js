@@ -33,6 +33,12 @@ const ConfigErrorMessages = {
   },
 };
 
+const DefaultOptions = {
+  dryRun: false,
+  printLog: value => console.log(value),
+  printWarn: value => console.warn(value),
+};
+
 // ========================================================================= //
 //                                  Functions                                //
 // ========================================================================= //
@@ -45,15 +51,14 @@ const ConfigErrorMessages = {
  * @param {object} options
  * @returns {string[]}
  */
-function insertSeparators(targetPath, options = {}) {
-  // pick up here, move default options to a constant
-  const { dryRun = false, log = console.log, warn = console.warn } = options;
+function insertSeparators(targetPath, options = DefaultOptions) {
   const dirPath = configDirFor(targetPath);
-  const { All, ...languages } = loadConfig(dirPath, log);
-  const langConfigArr = Object.entries(languages).map(([lang, entry]) =>
+  const { All, ...languages } = loadConfig(dirPath, options.printLog);
+  const languagesEntries = Object.entries(languages);
+  const langConfigArr = languagesEntries.map(([lang, entry]) =>
     compileEntry(lang, entry, All),
   );
-  return walk(targetPath, langConfigArr, { dryRun, log, warn });
+  return walk(targetPath, langConfigArr, options);
 }
 
 // =========================== Private Helpers ============================= //
@@ -65,10 +70,10 @@ function insertSeparators(targetPath, options = {}) {
  * JSON define new languages.
  *
  * @param {string} cwd
- * @param {function} log
+ * @param {function} printLog
  * @returns {object}
  */
-function loadConfig(cwd, log = console.log) {
+function loadConfig(cwd, printLog) {
   const configPath = path.join(cwd, CONFIG_FILE_NAME);
   if (!fs.existsSync(configPath)) {
     return DefaultConfig;
@@ -91,14 +96,13 @@ function loadConfig(cwd, log = console.log) {
   for (const lang of set) {
     config[lang] = { ...DefaultConfig[lang], ...langOverrides[lang] };
   }
-  if (log) log(`Using config overrides from: ${configPath}`);
+  printLog(`Using config overrides from: ${configPath}`);
   // Rreturn
   return config;
 }
 
 /**
  * @private
- *
  * Directory whose seps-config.json applies to a target path: the target's own
  * directory if it has one, otherwise the directory seps is being run from.
  *
@@ -116,25 +120,24 @@ function configDirFor(targetPath) {
 
 /**
  * @private
- *
  * Compile a declarative language entry into the matchers used while walking:
  * a FILE_EXT regex and REGION/SECTION marker regexes built from the comment
  * syntax around the fixed marker tokens. CharacterLimit/FillerCharacter fall
  * back to the shared "All" settings.
  *
- * @param {*} lang
- * @param {*} entry
- * @param {*} all
- * @returns
+ * @param {string} lang
+ * @param {object} entry
+ * @param {object} all
+ * @returns {object}
  */
 function compileEntry(lang, entry, all) {
   const {
     Extensions,
     Comment,
-    Bookends,
     CharacterLimit,
     FillerCharacter,
     DisableCapitalization,
+    Bookends,
   } = entry;
   // Check the configuration for errors
   if (!Array.isArray(Extensions) || Extensions.length === 0) {
@@ -185,8 +188,8 @@ function compileEntry(lang, entry, all) {
  * @private
  * Escape regex special characters in a literal string.
  *
- * @param {*} str
- * @returns
+ * @param {string} str
+ * @returns {string}
  */
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -196,12 +199,12 @@ function escapeRegex(str) {
  * @private
  * Recursively walk a path, rewriting markers in every supported file.
  *
- * @param {*} targetPath
- * @param {*} langConfigArr
- * @param {*} param2
+ * @param {string} targetPath
+ * @param {object[]} langConfigArr
+ * @param {object} options
  * @returns {string[]}
  */
-function walk(targetPath, langConfigArr, { dryRun, log, warn }) {
+function walk(targetPath, langConfigArr, options) {
   const updated = [];
   const stat = fs.statSync(targetPath);
   // Go recursive if directory
@@ -209,13 +212,9 @@ function walk(targetPath, langConfigArr, { dryRun, log, warn }) {
     const entries = fs.readdirSync(targetPath, { withFileTypes: true });
     for (const entry of entries) {
       if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
-      updated.push(
-        ...walk(path.join(targetPath, entry.name), langConfigArr, {
-          dryRun,
-          log,
-          warn,
-        }),
-      );
+      const fileFullPath = path.join(targetPath, entry.name);
+      const result = walk(fileFullPath, langConfigArr, options);
+      updated.push(...result);
     }
     return updated;
   }
@@ -225,10 +224,19 @@ function walk(targetPath, langConfigArr, { dryRun, log, warn }) {
   if (!paddingType) return updated;
   // Write the separator comment
   const content = fs.readFileSync(targetPath, 'utf8');
-  const next = formatSeparators(content, paddingType, targetPath, warn);
+  const next = formatSeparators(
+    content,
+    paddingType,
+    targetPath,
+    options.printWarn,
+  );
   if (next !== content) {
-    if (!dryRun) fs.writeFileSync(targetPath, next, 'utf8');
-    if (log) log(`${dryRun ? 'Would update' : 'Updated'}: ${targetPath}`);
+    if (!options.dryRun) {
+      fs.writeFileSync(targetPath, next, 'utf8');
+    }
+    options.printLog(
+      `${options.dryRun ? 'Would update' : 'Updated'}: ${targetPath}`,
+    );
     updated.push(targetPath);
   }
   // Return
@@ -242,10 +250,10 @@ function walk(targetPath, langConfigArr, { dryRun, log, warn }) {
  * @param {string} text
  * @param {object[]} paddingType
  * @param {string} filePath
- * @param {function} warn
+ * @param {function} printWarn
  * @returns {string}
  */
-function formatSeparators(text, paddingType, filePath, warn = console.warn) {
+function formatSeparators(text, paddingType, filePath, printWarn) {
   return text
     .split('\n')
     .map((line, index) => {
@@ -254,7 +262,7 @@ function formatSeparators(text, paddingType, filePath, warn = console.warn) {
       // Insert "section" separator
       if (sectionMatch) {
         const label = sectionMatch[1]?.trim() ?? '';
-        if (!label) return warnNoLabel(line, filePath, index, warn);
+        if (!label) return warnNoLabel(line, filePath, index, printWarn);
         return formatSection(
           capitalizeLabel(label, paddingType),
           paddingType,
@@ -265,7 +273,7 @@ function formatSeparators(text, paddingType, filePath, warn = console.warn) {
       const regionMatch = line.match(paddingType.REGION_MARKER);
       if (regionMatch) {
         const label = regionMatch[1]?.trim() ?? '';
-        if (!label) return warnNoLabel(line, filePath, index, warn);
+        if (!label) return warnNoLabel(line, filePath, index, printWarn);
         return formatRegion(
           capitalizeLabel(label, paddingType),
           paddingType,
@@ -285,14 +293,14 @@ function formatSeparators(text, paddingType, filePath, warn = console.warn) {
  * @param {*} line
  * @param {*} filePath
  * @param {*} index
- * @param {*} warn
+ * @param {*} printWarn
  * @returns
  */
-function warnNoLabel(line, filePath, index, warn) {
+function warnNoLabel(line, filePath, index, printWarn) {
   const message =
     `Warning: ${filePath}:${index + 1}: separator marker has ` +
     'no label, skipping';
-  warn(message);
+  printWarn(message);
   return line;
 }
 
