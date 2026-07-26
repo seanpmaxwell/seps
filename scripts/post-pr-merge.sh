@@ -21,12 +21,12 @@ set -euo pipefail;
 
 # -- Must be inside a git work tree -- #
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  echo "Error: not inside a git repository." >&2
-  exit 1
+  echo "Error: not inside a git repository." >&2;
+  exit 1;
 fi
 
 # -- Get the name of the current branch -- #
-BRANCH_NAME="$(git rev-parse --abbrev-ref HEAD)"
+BRANCH_NAME="$(git rev-parse --abbrev-ref HEAD)";
 
 if [ "$BRANCH_NAME" = "main" ]; then
   echo "Error: refusing to run on 'main'." >&2
@@ -35,37 +35,37 @@ fi
 
 # -- Refuse to run with uncommitted work, it would be lost -- #
 if ! git diff --quiet || ! git diff --cached --quiet; then
-  echo "Error: you have uncommitted changes; commit or stash them first." >&2
-  exit 1
+  echo "Error: you have uncommitted changes; commit or stash them first." >&2;
+  exit 1;
 fi
 
 # -- Make sure origin/main is up to date before comparing against it -- #
-git fetch origin
+git fetch origin;
 
 # -- Compare the current branch to the remote main branch -- #
 if ! git diff --quiet origin/main; then
-  echo "There are unmerged changes with main" >&2
-  exit 1
+  echo "There are unmerged changes with main" >&2;
+  exit 1;
 fi
 
 echo "==> '${BRANCH_NAME}' matches origin/main, recreating it"
 
 # -- Switch to main and pull down the latest changes -- #
-git checkout main
-git pull
+git checkout main;
+git pull;
 
 # -- Delete the branch locally and remotely -- #
 git branch -D "$BRANCH_NAME"
 if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
-  git push origin --delete "$BRANCH_NAME"
+  git push origin --delete "$BRANCH_NAME";
 else
-  echo "No remote branch '${BRANCH_NAME}' to delete, skipping."
+  echo "No remote branch '${BRANCH_NAME}' to delete, skipping.";
 fi
 
 # -- Recreate the branch off the fresh main -- #
-git checkout -b "$BRANCH_NAME"
+git checkout -b "$BRANCH_NAME";
 
 # -- Push it up as a new remote branch -- #
-git push -u origin "$BRANCH_NAME"
+git push -u origin "$BRANCH_NAME";
 
-echo "==> Done. '${BRANCH_NAME}' has been recreated from main."
+echo "==> Done. '${BRANCH_NAME}' has been recreated from main.";
