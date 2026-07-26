@@ -22,10 +22,20 @@ export default [
     },
     rules: {
       'no-unused-vars': 'off',
+      'no-console': 'warn',
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_' },
       ],
+    },
+  },
+  {
+    // The only places allowed to touch console: the logger, since wrapping it
+    // is the whole point of the class, and the build/tooling scripts, which
+    // print straight to the terminal by design.
+    files: ['src/common/utils/logger.ts', 'scripts/**'],
+    rules: {
+      'no-console': 'off',
     },
   },
 ];

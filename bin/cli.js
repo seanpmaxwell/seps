@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 import path from 'path';
-import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import {
   insertSeparators,
   initializeDirectory,
   loadJsonFile,
+  fileUtils,
 } from '../lib/index.js';
 
 // ========================================================================= //
@@ -18,7 +18,7 @@ const CURR_DIR = path.dirname(fileURLToPath(import.meta.url));
 // What to print to the console for the `--help` command line argument.
 const HELP_ARG_CONTENT = (() => {
   const helpContentFilePath = path.join(CURR_DIR, 'help.txt');
-  return readFileSync(helpContentFilePath, 'utf8');
+  return fileUtils.read(helpContentFilePath);
 })();
 
 // ========================================================================= //
@@ -56,12 +56,16 @@ function main() {
   if (!result) {
     return;
   }
-  const { paths, dryRun } = result;
+  const { paths, isDryRun } = result;
+  // If doing a dryRun, we don't want to modify files
+  if (isDryRun) {
+    fileUtils.setIsDryRun(true);
+  }
   // Run insertSeparators()
   let total = 0;
   for (const p of paths) {
     try {
-      const filesChanged = insertSeparators(p, { dryRun });
+      const filesChanged = insertSeparators(p);
       total += filesChanged.length;
     } catch (err) {
       process.stderr.write(`seps: ${p}: ${err.message}\n`);
@@ -69,7 +73,7 @@ function main() {
     }
   }
   // Print finished message
-  const verb = dryRun ? 'would be updated' : 'updated';
+  const verb = isDryRun ? 'would be updated' : 'updated';
   const message = `seps: ${total} file${total === 1 ? '' : 's'} ${verb}.\n`;
   process.stdout.write(message);
 }
@@ -86,7 +90,7 @@ function processCommandLineArgs(args) {
   // Init retVal
   const retVal = {
     paths: [],
-    dryRun: false,
+    isDryRun: false,
   };
   // Process other command line arguments (besides init)
   for (const arg of args) {
@@ -101,7 +105,7 @@ function processCommandLineArgs(args) {
         return null;
       case '-n':
       case '--dry-run':
-        retVal.dryRun = true;
+        retVal.isDryRun = true;
         break;
       default:
         if (arg.startsWith('-')) {

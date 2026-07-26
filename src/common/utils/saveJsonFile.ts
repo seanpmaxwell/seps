@@ -9,7 +9,7 @@ type Stringify = (value: unknown) => string;
 // ========================================================================= //
 //                                  Functions                                //
 // ========================================================================= //
-// Taken from: https://github.com/seanpmaxwell/js-dumping-ground/blob/main/files/saveJsonFile
+// Taken from: https://github.com/seanpmaxwell/js-dumping-ground/blob/main/files/saveJsonFile.ts
 
 /**
  * Save an object (or array) to a JSON file. Appends ".json" to the path unless
@@ -30,6 +30,7 @@ function saveJsonFile(
 
 /**
  * @private
+ *
  * Default serializer: pretty JSON with 2-space indentation.
  */
 function defaultStringify(value: unknown): string {
