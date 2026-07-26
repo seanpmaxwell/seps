@@ -65,7 +65,7 @@ fi
 # -- Recreate the branch off the fresh main -- #
 git checkout -b "$BRANCH_NAME";
 
-# -- Push it up as a new remote branch -- #
-git push -u origin "$BRANCH_NAME";
+# -- Push the rebuilt branch up as a new remote branch -- #
+git push --set-upstream origin "$BRANCH_NAME";
 
 echo "==> Done. '${BRANCH_NAME}' has been recreated from main.";

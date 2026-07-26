@@ -133,6 +133,6 @@ printf '%s\n' "$MESSAGE" | git commit -F -;
 git branch -D "$TEMP_BRANCH";
 
 # -- Push the rebuilt branch up as a new remote branch -- #
-git push -u origin "$BRANCH_NAME";
+git push --set-upstream origin "$BRANCH_NAME";
 
 echo "==> Done. '${BRANCH_NAME}' is now a single commit on top of main.";
