@@ -47,17 +47,17 @@ EOF
 
 # -- Must be inside a git work tree -- #
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  echo "Error: not inside a git repository." >&2
-  exit 1
+  echo "Error: not inside a git repository." >&2;
+  exit 1;
 fi
 
 # -- Get the name of the current branch -- #
-BRANCH_NAME="$(git rev-parse --abbrev-ref HEAD)"
-TEMP_BRANCH="${BRANCH_NAME}__temp"
+BRANCH_NAME="$(git rev-parse --abbrev-ref HEAD)";
+TEMP_BRANCH="${BRANCH_NAME}__temp";
 
 if [ "$BRANCH_NAME" = "main" ]; then
-  echo "Error: refusing to run on 'main'." >&2
-  exit 1
+  echo "Error: refusing to run on 'main'." >&2;
+  exit 1;
 fi
 
 if git show-ref --verify --quiet "refs/heads/${TEMP_BRANCH}"; then
@@ -117,22 +117,22 @@ if command -v claude >/dev/null 2>&1; then
       claude -p "$PROMPT" 2>/dev/null || true
   )"
   # Drop any code fences Claude may wrap the message in, plus blank edges.
-  MESSAGE="$(printf '%s' "$MESSAGE" | sed -e '/^```/d' -e 's/[[:space:]]*$//')"
+  MESSAGE="$(printf '%s' "$MESSAGE" | sed -e '/^```/d' -e 's/[[:space:]]*$//')";
 else
-  echo "Warning: 'claude' not found on PATH." >&2
+  echo "Warning: 'claude' not found on PATH." >&2;
 fi
 
 if [ -z "$MESSAGE" ]; then
-  echo "Warning: using fallback commit message '${FALLBACK_MESSAGE}'." >&2
-  MESSAGE="$FALLBACK_MESSAGE"
+  echo "Warning: using fallback commit message '${FALLBACK_MESSAGE}'." >&2;
+  MESSAGE="$FALLBACK_MESSAGE";
 fi
 
-printf '%s\n' "$MESSAGE" | git commit -F -
+printf '%s\n' "$MESSAGE" | git commit -F -;
 
 # -- Delete the temporary branch -- #
-git branch -D "$TEMP_BRANCH"
+git branch -D "$TEMP_BRANCH";
 
 # -- Push the rebuilt branch up as a new remote branch -- #
-git push -u origin "$BRANCH_NAME"
+git push -u origin "$BRANCH_NAME";
 
-echo "==> Done. '${BRANCH_NAME}' is now a single commit on top of main."
+echo "==> Done. '${BRANCH_NAME}' is now a single commit on top of main.";
