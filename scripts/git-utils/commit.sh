@@ -3,7 +3,7 @@
 # Run a commit/push and set the number of files changed as the commit message
 # NOTE: this is for casual backup commits during development, it should not be
 # the final commit message when running a PR against main, use 
-# `commit-squash.sh` before trying to create a PR with main.
+# `squash-commit-history.sh` before trying to create a PR with main.
 
 set -euo pipefail;
 

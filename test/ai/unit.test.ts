@@ -3,8 +3,13 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
-import { insertSeparators, initializeDirectory, loadJsonFile } from '../../src';
-import type { Options } from '../../src';
+import {
+  insertSeparators,
+  initializeDirectory,
+  loadJsonFile,
+  logger,
+  fileUtils,
+} from '../../src';
 
 // ========================================================================= //
 //                                      Run                                  //
@@ -15,12 +20,22 @@ import type { Options } from '../../src';
 // temp dir without one exercises the built-in defaults.
 let dir: string;
 
+// The logger is a singleton shared with the source, so spy on it rather than
+// swapping its print functions: vi.restoreAllMocks() then undoes it for us and
+// nothing leaks between tests.
+let warn: ReturnType<typeof vi.spyOn>;
+let info: ReturnType<typeof vi.spyOn>;
+
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'seps-test-'));
+  warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+  info = vi.spyOn(logger, 'info').mockImplementation(() => {});
 });
 
 afterEach(() => {
   fs.rmSync(dir, { recursive: true, force: true });
+  fileUtils.setIsDryRun(false);
+  vi.restoreAllMocks();
 });
 
 // ========================================================================= //
@@ -46,11 +61,8 @@ function read(rel: string): string {
   return fs.readFileSync(path.join(dir, rel), 'utf8');
 }
 
-function run(target: string = dir, opts: Options = {}) {
-  const printLog = vi.fn();
-  const printWarn = vi.fn();
-  const updated = insertSeparators(target, { printLog, printWarn, ...opts });
-  return { updated, printLog, printWarn };
+function run(target: string = dir) {
+  return insertSeparators(target);
 }
 
 // Assert a generated separator line is well-formed.
@@ -189,28 +201,28 @@ describe('label capitalization', () => {
 describe('markers with no label', () => {
   it('leaves a bare marker untouched and warns with file and line', () => {
     const p = write('a.js', 'x\n// @reg\ny\n');
-    const { updated, printWarn } = run();
+    const updated = run();
     expect(read('a.js')).toBe('x\n// @reg\ny\n');
     expect(updated).toHaveLength(0);
-    expect(printWarn).toHaveBeenCalledWith(
+    expect(warn).toHaveBeenCalledWith(
       `Warning: ${p}:2: separator marker has no label, skipping`,
     );
   });
 
   it('treats a marker with only trailing spaces as label-less', () => {
     write('a.js', '// @sec   \n');
-    const { printWarn } = run();
-    expect(printWarn).toHaveBeenCalledTimes(1);
+    run();
+    expect(warn).toHaveBeenCalledTimes(1);
   });
 
   it('still formats other markers in the same file', () => {
     write('a.js', '// @reg\n// @reg Real\n');
-    const { updated, printWarn } = run();
+    const updated = run();
     const lines = read('a.js').split('\n');
     expect(lines[0]).toBe('// @reg');
     expectLine(lines[1]);
     expect(updated).toHaveLength(1);
-    expect(printWarn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -267,6 +279,15 @@ describe('configuration overrides', () => {
     expect(line).toContain(' Hello ');
   });
 
+  it('logs which config file the overrides came from', () => {
+    writeConfig({ All: { CharacterLimit: 40 } });
+    write('a.js', '// @sec x\n');
+    run();
+    expect(info).toHaveBeenCalledWith(
+      `Using config overrides from: ${path.join(dir, 'seps-config.json')}`,
+    );
+  });
+
   it('reads config from the target directory before the cwd', () => {
     writeConfig({ All: { CharacterLimit: 30 } });
     const file = write('a.js', '// @sec x\n');
@@ -282,9 +303,7 @@ describe('configuration overrides', () => {
 describe('configuration validation', () => {
   const expectThrows = (re: RegExp): void => {
     write('a.js', '// @sec x\n');
-    expect(() =>
-      insertSeparators(dir, { printLog: vi.fn(), printWarn: vi.fn() }),
-    ).toThrow(re);
+    expect(() => insertSeparators(dir)).toThrow(re);
   };
 
   it('rejects malformed JSON', () => {
@@ -345,7 +364,7 @@ describe('configuration validation', () => {
 describe('directory walking', () => {
   it('recurses into subdirectories', () => {
     write('nested/deep/a.js', '// @sec x\n');
-    const { updated } = run();
+    const updated = run();
     expect(updated).toHaveLength(1);
     expect(read('nested/deep/a.js').split('\n')[0].length).toBe(79);
   });
@@ -353,7 +372,7 @@ describe('directory walking', () => {
   it('skips node_modules', () => {
     write('node_modules/pkg/a.js', '// @sec x\n');
     write('b.js', '// @sec x\n');
-    const { updated } = run();
+    const updated = run();
     expect(updated).toHaveLength(1);
     expect(read('node_modules/pkg/a.js')).toBe('// @sec x\n');
   });
@@ -361,21 +380,21 @@ describe('directory walking', () => {
   it('skips dotfiles and dot-directories', () => {
     write('.hidden/a.js', '// @sec x\n');
     write('.config.js', '// @sec x\n');
-    const { updated } = run();
+    const updated = run();
     expect(updated).toHaveLength(0);
   });
 
   it('skips unsupported file extensions', () => {
     write('a.txt', '// @sec x\n');
-    const { updated } = run();
+    const updated = run();
     expect(updated).toHaveLength(0);
     expect(read('a.txt')).toBe('// @sec x\n');
   });
 
-  it('returns the list of updated file paths', () => {
+  it('returns the list of updated file paths', () => {    
     const a = write('a.js', '// @sec x\n');
     const b = write('b.js', '// @sec y\n');
-    const { updated } = run();
+    const updated = run();
     expect(updated.sort()).toEqual([a, b].sort());
   });
 });
@@ -387,12 +406,17 @@ describe('directory walking', () => {
 describe('dry run', () => {
   it('does not write files but reports what would change', () => {
     write('a.js', '// @sec x\n');
-    const { updated, printLog } = run(dir, { dryRun: true });
+    fileUtils.setIsDryRun(true);
+    const updated = run();
     expect(read('a.js')).toBe('// @sec x\n');
     expect(updated).toHaveLength(1);
-    expect(printLog).toHaveBeenCalledWith(
-      expect.stringMatching(/^Would update:/),
-    );
+    expect(info).toHaveBeenCalledWith(expect.stringMatching(/^Would update:/));
+  });
+
+  it('logs "Updated" rather than "Would update" outside a dry run', () => {
+    write('a.js', '// @sec x\n');
+    run();
+    expect(info).toHaveBeenCalledWith(expect.stringMatching(/^Updated:/));
   });
 });
 
@@ -405,7 +429,7 @@ describe('idempotency', () => {
     write('a.js', '// @reg hello\n// @sec world\n');
     run();
     const first = read('a.js');
-    const { updated } = run();
+    const updated = run();
     expect(read('a.js')).toBe(first);
     expect(updated).toHaveLength(0);
   });

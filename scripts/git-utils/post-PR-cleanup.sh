@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
-# `post-pr-merge.sh` — recreate the current branch fresh off main once its pull
-# request has been merged.
+# `post-PR-cleanup.sh` — recreate the current branch fresh off main once 
+# its pull request has been merged.
 #
 # Verifies the branch's content matches the remote main branch (which is the
 # case once a PR is merged, even though a squash-merge gives main different
 # commits), then rebuilds the branch from main so it is ready for the next
 # round of work.
 #
-# Usage: ./post-pr-merge.sh
+# Usage: ./post-PR-cleanup.sh
 #
 # WARNING: this deletes the branch locally and remotely before recreating it.
 # Run it only after the pull request has actually been merged.

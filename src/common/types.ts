@@ -67,26 +67,3 @@ export interface LangConfig {
   FILLER: string;
   DISABLE_CAP: boolean;
 }
-
-/**
- * Sink for the log/warning output.
- */
-export type PrintFn = (value: string) => void;
-
-/**
- * Caller-supplied options; anything omitted falls back to a default.
- */
-export interface Options {
-  dryRun?: boolean;
-  printLog?: PrintFn;
-  printWarn?: PrintFn;
-}
-
-/**
- * Options after defaults have been applied.
- */
-export interface ResolvedOptions {
-  dryRun: boolean;
-  printLog: PrintFn;
-  printWarn: PrintFn;
-}

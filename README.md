@@ -136,7 +136,7 @@ This writes a `seps-config.json` to the current directory (it refuses to overwri
 ```js
 import insertSeparators from 'seps';
 
-insertSeparators('src', { dryRun: true });
+insertSeparators('src');
 ```
 
 ## License
