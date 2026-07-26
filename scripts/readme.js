@@ -1,8 +1,11 @@
+import { copyFileSync, existsSync, rmSync } from 'fs';
+
+// ========================================================================= //
+//                                      Run                                  //
+// ========================================================================= //
 // Swap the published README around publishing. "swap" backs up README.md to
 // README-tmp and puts README-npm in its place (so the npm-specific README is
 // what gets packed); "restore" puts the original back and removes the backup.
-
-import { copyFileSync, existsSync, rmSync } from 'fs';
 
 const action = process.argv[2];
 
