@@ -13,9 +13,13 @@
   "bin": {
     "seps": "bin/cli.js"
   },
-  "main": "lib/insert-separators.js",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "exports": {
-    ".": "./lib/insert-separators.js"
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    }
   },
   "files": [
     "bin",
@@ -25,6 +29,8 @@
   "scripts": {
     "start": "npm run build && node bin/cli.js",
     "build": "node scripts/build.js",
+    "typecheck": "tsc",
+    "clean-install": "bash ./scripts/clean-install.sh",
     "test": "vitest run",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -33,7 +39,7 @@
     "readme:swap": "node scripts/readme.js swap",
     "readme:restore": "node scripts/readme.js restore",
     "prepare": "npm run build",
-    "prepublishOnly": "npm run lint && npm run format:check && npm test && npm run readme:swap",
+    "prepublishOnly": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run readme:swap",
     "postpublish": "npm run readme:restore"
   },
   "engines": {
@@ -59,11 +65,14 @@
   "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/node": "^26.1.1",
     "esbuild": "^0.28.1",
     "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.7.0",
     "prettier": "^3.9.5",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.65.0",
     "vitest": "^4.1.10"
   }
 }

@@ -2,13 +2,18 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import insertSeparators from '../../src/insertSeparators.js';
-import initializeDirectory from '../../src/initializeDirectory.js';
+
+import { insertSeparators, initializeDirectory, loadJsonFile } from '../../src';
+import type { Options } from '../../src';
+
+// ========================================================================= //
+//                                      Run                                  //
+// ========================================================================= //
 
 // A fresh temp directory per test keeps each case isolated. seps falls back to
 // process.cwd() for config, and the project root has no seps-config.json, so a
 // temp dir without one exercises the built-in defaults.
-let dir;
+let dir: string;
 
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'seps-test-'));
@@ -22,14 +27,14 @@ afterEach(() => {
 //                                  Helpers                                  //
 // ========================================================================= //
 
-function write(rel, content) {
+function write(rel: string, content: string): string {
   const p = path.join(dir, rel);
   fs.mkdirSync(path.dirname(p), { recursive: true });
   fs.writeFileSync(p, content, 'utf8');
   return p;
 }
 
-function writeConfig(obj) {
+function writeConfig(obj: object | string): void {
   fs.writeFileSync(
     path.join(dir, 'seps-config.json'),
     typeof obj === 'string' ? obj : JSON.stringify(obj),
@@ -37,19 +42,22 @@ function writeConfig(obj) {
   );
 }
 
-function read(rel) {
+function read(rel: string): string {
   return fs.readFileSync(path.join(dir, rel), 'utf8');
 }
 
-function run(target = dir, opts = {}) {
-  const log = vi.fn();
-  const warn = vi.fn();
-  const updated = insertSeparators(target, { log, warn, ...opts });
-  return { updated, log, warn };
+function run(target: string = dir, opts: Options = {}) {
+  const printLog = vi.fn();
+  const printWarn = vi.fn();
+  const updated = insertSeparators(target, { printLog, printWarn, ...opts });
+  return { updated, printLog, printWarn };
 }
 
 // Assert a generated separator line is well-formed.
-function expectLine(line, over = {}) {
+function expectLine(
+  line: string,
+  over: { len?: number; open?: string; close?: string } = {},
+): void {
   const { len = 79, open = '// ', close = ' //' } = over;
   expect(line.length).toBe(len);
   expect(line.startsWith(open)).toBe(true);
@@ -128,12 +136,11 @@ describe('region formatting (// @reg)', () => {
 // ========================================================================= //
 
 describe('label capitalization', () => {
-  const label = src => {
+  const label = (src: string): string => {
     write('a.js', `// @sec ${src}\n`);
     run();
-    return read('a.js')
-      .split('\n')[0]
-      .match(/=+ (.+?) =+/)[1];
+    const line = read('a.js').split('\n')[0];
+    return line.match(/=+ (.+?) =+/)?.[1] ?? '';
   };
 
   it('title-cases lowercase words', () => {
@@ -182,28 +189,28 @@ describe('label capitalization', () => {
 describe('markers with no label', () => {
   it('leaves a bare marker untouched and warns with file and line', () => {
     const p = write('a.js', 'x\n// @reg\ny\n');
-    const { updated, warn } = run();
+    const { updated, printWarn } = run();
     expect(read('a.js')).toBe('x\n// @reg\ny\n');
     expect(updated).toHaveLength(0);
-    expect(warn).toHaveBeenCalledWith(
+    expect(printWarn).toHaveBeenCalledWith(
       `Warning: ${p}:2: separator marker has no label, skipping`,
     );
   });
 
   it('treats a marker with only trailing spaces as label-less', () => {
     write('a.js', '// @sec   \n');
-    const { warn } = run();
-    expect(warn).toHaveBeenCalledTimes(1);
+    const { printWarn } = run();
+    expect(printWarn).toHaveBeenCalledTimes(1);
   });
 
   it('still formats other markers in the same file', () => {
     write('a.js', '// @reg\n// @reg Real\n');
-    const { updated, warn } = run();
+    const { updated, printWarn } = run();
     const lines = read('a.js').split('\n');
     expect(lines[0]).toBe('// @reg');
     expectLine(lines[1]);
     expect(updated).toHaveLength(1);
-    expect(warn).toHaveBeenCalledTimes(1);
+    expect(printWarn).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -269,14 +276,14 @@ describe('configuration overrides', () => {
 });
 
 // ========================================================================= //
-//                          Config: validation                              //
+//                           Config: validation                              //
 // ========================================================================= //
 
 describe('configuration validation', () => {
-  const expectThrows = re => {
+  const expectThrows = (re: RegExp): void => {
     write('a.js', '// @sec x\n');
     expect(() =>
-      insertSeparators(dir, { log: vi.fn(), warn: vi.fn() }),
+      insertSeparators(dir, { printLog: vi.fn(), printWarn: vi.fn() }),
     ).toThrow(re);
   };
 
@@ -380,10 +387,12 @@ describe('directory walking', () => {
 describe('dry run', () => {
   it('does not write files but reports what would change', () => {
     write('a.js', '// @sec x\n');
-    const { updated, log } = run(dir, { dryRun: true });
+    const { updated, printLog } = run(dir, { dryRun: true });
     expect(read('a.js')).toBe('// @sec x\n');
     expect(updated).toHaveLength(1);
-    expect(log).toHaveBeenCalledWith(expect.stringMatching(/^Would update:/));
+    expect(printLog).toHaveBeenCalledWith(
+      expect.stringMatching(/^Would update:/),
+    );
   });
 });
 
@@ -439,10 +448,15 @@ describe('language comment syntaxes', () => {
 // ========================================================================= //
 
 describe('initializeDirectory', () => {
+  interface ParsedConfig {
+    All: { CharacterLimit: number; FillerCharacter: string };
+    JavaScript: { Extensions: string[] };
+  }
+
   it('writes a parseable config with defaults and returns its path', () => {
     const p = initializeDirectory(dir);
     expect(p).toBe(path.join(dir, 'seps-config.json'));
-    const parsed = JSON.parse(fs.readFileSync(p, 'utf8'));
+    const parsed = loadJsonFile<ParsedConfig>(p);
     expect(parsed.All).toMatchObject({
       CharacterLimit: 79,
       FillerCharacter: '=',
