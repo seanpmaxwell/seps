@@ -28,8 +28,9 @@ git checkout main;
 git fetch origin;
 git pull;
 
-# Recreate the branch off the fresh main
+# Merge with main
 git checkout "$BRANCH_NAME";
+git merge main;
 
 # Push the rebuilt branch up as a new remote branch
 git push;
