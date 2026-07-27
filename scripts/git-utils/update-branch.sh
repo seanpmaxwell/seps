@@ -20,12 +20,16 @@ if [ "$BRANCH_NAME" = "main" ]; then
   exit 1;
 fi
 
-# Commit any uncommitted changes
-npm run git:commit;
+# Add all files to the commit
+git add -A;
+
+# Commit the changes with a timestamp + "# of files changed" message
+TIMESTAMP="$( date +"%Y-%m-%d %H:%M:%S" )";
+FILES_CHANGED="$(git diff --cached --name-only | wc -l | tr -d '[:space:]')";
+git commit -m "Time: ${TIMESTAMP}, ${FILES_CHANGED} files changed";
 
 # Switch to main and pull down the latest changes
 git checkout main;
-git fetch origin;
 git pull;
 
 # Merge with main
