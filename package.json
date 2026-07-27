@@ -32,7 +32,7 @@
     "clean-install": "bash ./scripts/clean-install.sh",
     "git:commit": "bash ./scripts/git-utils/commit.sh",
     "git:squash-history": "bash ./scripts/git-utils/squash-commit-history.sh",
-    "git:post-PR-cleanup": "bash ./scripts/git-utils/post-PR-cleanup.sh",
+    "git:update-branch": "bash ./scripts/git-utils/update-branch.sh",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

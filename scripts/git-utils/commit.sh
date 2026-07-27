@@ -26,7 +26,6 @@ git add -A;
 # Exit if no changed files
 if git diff --cached --quiet; then
   echo "Nothing to commit.";
-  exit 0;
 fi
 
 # Commit the changes with a timestamp + "# of files changed" message
