@@ -20,13 +20,20 @@ if [ "$BRANCH_NAME" = "main" ]; then
   exit 1;
 fi
 
-# Add all files to the commit
-git add -A;
-
-# Commit the changes with a timestamp + "# of files changed" message
-TIMESTAMP="$( date +"%Y-%m-%d %H:%M:%S" )";
-FILES_CHANGED="$(git diff --cached --name-only | wc -l | tr -d '[:space:]')";
-git commit -m "Time: ${TIMESTAMP}, ${FILES_CHANGED} files changed";
+# Only commit if there is something to commit, `git commit` fails otherwise.
+# Porcelain status is used rather than `git diff` because it also reports
+# untracked files. The push below still runs either way, so a branch with
+# nothing to commit still gets its upstream set.
+if [ -n "$(git status --porcelain)" ]; then
+  # Add all files to the commit
+  git add -A;
+  # Commit the changes with a timestamp + "# of files changed" message
+  TIMESTAMP="$( date +"%Y-%m-%d %H:%M:%S" )";
+  FILES_CHANGED="$(git diff --cached --name-only | wc -l | tr -d '[:space:]')";
+  git commit -m "Time: ${TIMESTAMP}, ${FILES_CHANGED} files changed";
+else
+  echo "Nothing to commit.";
+fi
 
 # Push the changes remotely. If the remote branch exists a plain `git push`
 # works, otherwise the upstream has to be set the first time it is pushed.

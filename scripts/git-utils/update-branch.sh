@@ -20,13 +20,19 @@ if [ "$BRANCH_NAME" = "main" ]; then
   exit 1;
 fi
 
-# Add all files to the commit
-git add -A;
-
-# Commit the changes with a timestamp + "# of files changed" message
-TIMESTAMP="$( date +"%Y-%m-%d %H:%M:%S" )";
-FILES_CHANGED="$(git diff --cached --name-only | wc -l | tr -d '[:space:]')";
-git commit -m "Time: ${TIMESTAMP}, ${FILES_CHANGED} files changed";
+# Only commit if there is something to commit, `git commit` fails otherwise and
+# would stop the branch being updated at all. Porcelain status is used rather
+# than `git diff` because it also reports untracked files.
+if [ -n "$(git status --porcelain)" ]; then
+  # Add all files to the commit
+  git add -A;
+  # Commit the changes with a timestamp + "# of files changed" message
+  TIMESTAMP="$( date +"%Y-%m-%d %H:%M:%S" )";
+  FILES_CHANGED="$(git diff --cached --name-only | wc -l | tr -d '[:space:]')";
+  git commit -m "Time: ${TIMESTAMP}, ${FILES_CHANGED} files changed";
+else
+  echo "Nothing to commit.";
+fi
 
 # Switch to main and pull down the latest changes
 git checkout main;
@@ -35,9 +41,6 @@ git pull;
 # Merge with main
 git checkout "$BRANCH_NAME";
 git merge main;
-
-# Push the rebuilt branch up as a new remote branch
-git push;
 
 # Final message
 echo "==> Done. '${BRANCH_NAME}' has been updated from main.";
