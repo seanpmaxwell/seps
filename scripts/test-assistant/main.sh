@@ -16,8 +16,8 @@ set -euo pipefail;
 #                                    Constants                                #
 # =========================================================================== #
 
-REPORT_FILE="scripts/test-helper.report.tmp.txt";
-RECOMMENDATIONS_FILE="scripts/test-helper.recommended-fixes.tmp.md";
+REPORT_FILE="scripts/test-assistant/report.tmp.txt";
+RECOMMENDATIONS_FILE="scripts/test-assistant/recommended-fixes.tmp.md";
 
 # The claude runner owns the model and the prompt: it reads its content from
 # tmp/input.txt and writes the answer to tmp/output.txt, both alongside its own
@@ -27,7 +27,7 @@ CLAUDE_RUNNER="${CLAUDE_RUNNER_DIR}/main.sh";
 CLAUDE_INPUT="${CLAUDE_RUNNER_DIR}/tmp/input.txt";
 CLAUDE_OUTPUT="${CLAUDE_RUNNER_DIR}/tmp/output.txt";
 
-CLAUDE_PROMPT_NAME="generate-test-report";
+CLAUDE_PROMPT_NAME="get-recommended-test-fixes";
 
 # =========================================================================== #
 #                                    Run                                      #
@@ -97,7 +97,7 @@ if [ "$all_clean" = true ]; then
 fi
 
 # -- Something to report: have Claude recommend fixes -- #
-echo "==> Issues found, generating recommendations";
+echo "==> Issues found, generating recommended fixes";
 
 # Hand the report to the runner through its input file. The old output is
 # removed first so a stale answer from an earlier run can never be mistaken for
