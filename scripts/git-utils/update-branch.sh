@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+set -euo pipefail;
+
+# =========================================================================== #
+#                                    Run                                      #
+# =========================================================================== #
+
+# Must be inside a git work tree
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "Error: not inside a git repository." >&2;
+  exit 1;
+fi
+
+# Get the name of the current branch
+BRANCH_NAME="$(git rev-parse --abbrev-ref HEAD)";
+
+if [ "$BRANCH_NAME" = "main" ]; then
+  echo "Error: refusing to run on 'main'." >&2;
+  exit 1;
+fi
+
+# Commit any uncommitted changes
+npm run git:commit;
+
+# Switch to main and pull down the latest changes
+git checkout main;
+git fetch origin;
+git pull;
+
+# Recreate the branch off the fresh main
+git checkout "$BRANCH_NAME";
+
+# Push the rebuilt branch up as a new remote branch
+git push;
+
+# Final message
+echo "==> Done. '${BRANCH_NAME}' has been updated from main.";
