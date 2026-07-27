@@ -121,6 +121,8 @@ Built-in languages and their defaults:
 | `Rust`       | `.rs`                         | `// @reg Label`    | `// ` … ` //` |
 | `Php`        | `.php`                        | `// @reg Label`    | `// ` … ` //` |
 | `Ruby`       | `.rb`                         | `# @reg Label`     | `# ` … ` #`   |
+| `Python`     | `.py .pyi .pyw`               | `# @reg Label`     | `# ` … ` #`   |
+| `Bash`       | `.sh .bash`                   | `# @reg Label`     | `# ` … ` #`   |
 | `Sql`        | `.sql`                        | `-- @reg Label`    | `-- ` … ` --` |
 
 Rather than writing the file from scratch, you can generate one pre-filled with all the default settings and edit from there:

@@ -166,9 +166,6 @@ function configureLangEntry(
     const message = ErrorMessages.DisableCapitalization(lang);
     throw new Error(message);
   }
-
-  // pick up here, marker needs to be a standalone function: getMarkerRegex
-
   // Capture the label if present. A bare marker ("// @reg" with no label) still
   // matches, but is warned about and skipped rather than formatted.
   const marker = (token: string) =>
@@ -240,7 +237,12 @@ function walkDirectoryRecursively(
   if (!langConfig) return updated;
   // Write the separator comment (unless doing a dryRun)
   const content = fileUtils.read(targetPath);
-  const next = formatSeparators(content, langConfig, targetPath);
+  const next = content
+    .split('\n')
+    .map((line, i) =>
+      checkForMarkerAndAddSeparator(line, i, langConfig, targetPath),
+    )
+    .join('\n');
   if (next !== content) {
     fileUtils.write(targetPath, next);
     const logMsgStart = fileUtils.getIsDryRun() ? 'Would update' : 'Updated';
@@ -256,44 +258,31 @@ function walkDirectoryRecursively(
  *
  * Determine whether to format a "section" or a "region".
  */
-function formatSeparators(
-  text: string,
+function checkForMarkerAndAddSeparator(
+  line: string,
+  index: number,
   langConfig: LangConfig,
   filePath: string,
 ): string {
-  return text
-    .split('\n')
-    .map((line, index) => {
-      const indent = line.match(/^(\s*)/)?.[1] ?? '';
-      const sectionMatch = line.match(langConfig.SECTION_MARKER);
-      // Insert "section" separator
-      if (sectionMatch) {
-        const label = sectionMatch[1]?.trim() ?? '';
-        if (!label) {
-          return printMissingLabelWarning(filePath, index, line);
-        }
-        return formatSection(
-          capitalizeLabel(label, langConfig),
-          langConfig,
-          indent,
-        );
-      }
-      // Insert "region" separator
-      const regionMatch = line.match(langConfig.REGION_MARKER);
-      if (regionMatch) {
-        const label = regionMatch[1]?.trim() ?? '';
-        if (!label) {
-          return printMissingLabelWarning(filePath, index, line);
-        }
-        return formatRegion(
-          capitalizeLabel(label, langConfig),
-          langConfig,
-          indent,
-        );
-      }
-      return line;
-    })
-    .join('\n');
+  const indent = line.match(/^(\s*)/)?.[1] ?? '';
+  const sectionMatch = line.match(langConfig.SECTION_MARKER);
+  // Insert "section" separator
+  if (sectionMatch) {
+    const label = sectionMatch[1]?.trim() ?? '';
+    if (!label) return printMissingLabelWarning(filePath, index, line);
+    const labelFinal = capitalizeLabel(label, langConfig);
+    return formatSection(labelFinal, langConfig, indent);
+  }
+  // Insert "region" separator
+  const regionMatch = line.match(langConfig.REGION_MARKER);
+  if (regionMatch) {
+    const label = regionMatch[1]?.trim() ?? '';
+    if (!label) return printMissingLabelWarning(filePath, index, line);
+    const labelFinal = capitalizeLabel(label, langConfig);
+    return formatRegion(labelFinal, langConfig, indent);
+  }
+  // Return unedited line if no marker found
+  return line;
 }
 
 /**
