@@ -1,8 +1,8 @@
-seps - format separator / header comment markers
+seps-cli - format separator / header comment markers
 
 Usage:
-  seps [options] [paths...]
-  seps init
+  seps-cli [options] [paths...]
+  seps-cli init
 
 Commands:
   init             Generate a seps-config.json in the current directory
