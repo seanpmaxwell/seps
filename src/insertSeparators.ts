@@ -1,7 +1,7 @@
 // import fs from 'fs';
 import path from 'path';
-import DefaultConfig from './common/DefaultConfig';
-import { CONFIG_FILE_NAME } from './common/constants';
+import DefaultConfig from './common/constants/DefaultConfig';
+import { CONFIG_FILE_NAME } from './common/constants/misc';
 import loadJsonFile from './common/utils/loadJsonFile';
 import type {
   LangConfig,
@@ -283,8 +283,8 @@ function formatSeparators(
       if (regionMatch) {
         const label = regionMatch[1]?.trim() ?? '';
         if (!label) {
-          return printMissingLabelWarning(filePath, index, line)
-        };
+          return printMissingLabelWarning(filePath, index, line);
+        }
         return formatRegion(
           capitalizeLabel(label, langConfig),
           langConfig,
@@ -334,7 +334,7 @@ function capitalizeLabel(label: string, langConfig: LangConfig): string {
 
 /**
  * @private
- * 
+ *
  * Check if a string is an alphanumeric string.
  */
 function getIsAlphaNum(value: string): boolean {

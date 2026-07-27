@@ -391,7 +391,7 @@ describe('directory walking', () => {
     expect(read('a.txt')).toBe('// @sec x\n');
   });
 
-  it('returns the list of updated file paths', () => {    
+  it('returns the list of updated file paths', () => {
     const a = write('a.js', '// @sec x\n');
     const b = write('b.js', '// @sec y\n');
     const updated = run();
@@ -407,6 +407,7 @@ describe('dry run', () => {
   it('does not write files but reports what would change', () => {
     write('a.js', '// @sec x\n');
     fileUtils.setIsDryRun(true);
+    expect(true).toBe(false)
     const updated = run();
     expect(read('a.js')).toBe('// @sec x\n');
     expect(updated).toHaveLength(1);

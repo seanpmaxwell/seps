@@ -1,4 +1,4 @@
-import type { SepsConfig } from './types';
+import type { SepsConfig } from '../types';
 
 // ========================================================================= //
 //                                  Constants                                //
@@ -66,6 +66,11 @@ const DefaultConfig = {
   },
   Bash: {
     Extensions: ['.sh'],
+    Comment: ['# ', ''],
+    Bookends: ['# ', ' #'],
+  },
+  Python: {
+    Extensions: ['.py', 'pyi', 'pyw'],
     Comment: ['# ', ''],
     Bookends: ['# ', ' #'],
   },
