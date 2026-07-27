@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    strategy:
+      # Run every version even if an earlier one fails, so a single old-Node
+      # break does not hide the results for the rest.
+      fail-fast: false
+      matrix:
+        # The versions package.json claims to support (engines: >=18).
+        node-version: [18.x, 20.x, 22.x, 24.x]
+
+    name: node ${{ matrix.node-version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      # `npm ci` installs from the lockfile and runs the `prepare` script, so
+      # this also proves the TypeScript build works on a clean checkout.
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Test
+        run: npm test

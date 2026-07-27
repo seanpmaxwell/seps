@@ -1,5 +1,7 @@
 # seps
 
+[![CI](https://github.com/seanpmaxwell/seps/actions/workflows/ci.yml/badge.svg)](https://github.com/seanpmaxwell/seps/actions/workflows/ci.yml)
+
 Command-line tool to insert separator/header comments in your source files so labels are centered and each line fills up to a character limit.
 
 ## Preview

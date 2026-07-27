@@ -1,4 +1,3 @@
-// import fs from 'fs';
 import path from 'path';
 import DefaultConfig from './common/constants/DefaultConfig';
 import { CONFIG_FILE_NAME } from './common/constants/misc';
@@ -166,21 +165,23 @@ function configureLangEntry(
     const message = ErrorMessages.DisableCapitalization(lang);
     throw new Error(message);
   }
+  // Bookends default to the comment syntax when the language doesn't set them.
+  let bookends: [string, string];
+  if (!Bookends) {
+    const closeFinal = close ?? ` ${open.trim()}`;
+    bookends = [open, closeFinal];
+  } else {
+    bookends = Bookends as [string, string];
+  }
   // Capture the label if present. A bare marker ("// @reg" with no label) still
   // matches, but is warned about and skipped rather than formatted.
   const marker = (token: string) =>
     new RegExp(
       `^\\s*${escapeRegex(open)}${escapeRegex(token)}(?: (.+?))?${escapeRegex(close)}\\s*$`,
     );
-  const exts = Extensions.map((ext: string) =>
-    escapeRegex(ext.replace(/^\./, '')),
-  );
-  // Bookends default to the comment syntax when the language doesn't set them.
-  const bookends = (Bookends ??
-    (close ? [open, close] : [open, ` ${open.trim()}`])) as [string, string];
   // Return
   return {
-    FILE_EXT: new RegExp(`\\.(${exts.join('|')})$`),
+    FILE_EXT: getExtensionRegex(Extensions),
     REGION_MARKER: marker(Markers.REGION),
     SECTION_MARKER: marker(Markers.SECTION),
     BOOKENDS: bookends,
@@ -196,6 +197,17 @@ function configureLangEntry(
  */
 function isPositiveInt(value: unknown): value is number {
   return Number.isInteger(value) && (value as number) >= 1;
+}
+
+/**
+ *
+ */
+function getExtensionRegex(extensions: string[]): RegExp {
+  const cleanExtensions = extensions.map((ext: string) => {
+    const extFinal = ext.replace(/^\./, '');
+    return escapeRegex(extFinal);
+  });
+  return new RegExp(`\\.(${cleanExtensions.join('|')})$`);
 }
 
 /**

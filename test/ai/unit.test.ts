@@ -407,7 +407,6 @@ describe('dry run', () => {
   it('does not write files but reports what would change', () => {
     write('a.js', '// @sec x\n');
     fileUtils.setIsDryRun(true);
-    expect(true).toBe(false);
     const updated = run();
     expect(read('a.js')).toBe('// @sec x\n');
     expect(updated).toHaveLength(1);

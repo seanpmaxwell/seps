@@ -1,14 +1,9 @@
-<p align="center">
-  <img alt="seps" src="https://github.com/seanpmaxwell/seps/raw/master/express-typescript.png" width="420">
-</p>
-
-<p align="center">
-  <a href="https://www.npmjs.com/package/seps"><img src="https://img.shields.io/npm/v/seps.svg?style=for-the-badge&logo=npm" alt="NPM Version"></a>
-  <a href="https://www.npmjs.com/package/seps"><img src="https://img.shields.io/npm/dm/seps.svg?style=for-the-badge" alt="NPM Downloads"></a>
-  <a href="https://www.npmjs.com/package/seps"><img src="https://img.shields.io/npm/l/seps.svg?style=for-the-badge" alt="License"></a>
-</p>
-
 # seps
+
+[![NPM Version](https://img.shields.io/npm/v/seps.svg?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/seps)
+[![NPM Downloads](https://img.shields.io/npm/dm/seps.svg?style=for-the-badge)](https://www.npmjs.com/package/seps)
+[![License](https://img.shields.io/npm/l/seps.svg?style=for-the-badge)](https://www.npmjs.com/package/seps)
+[![CI](https://img.shields.io/github/actions/workflow/status/seanpmaxwell/seps/ci.yml?style=for-the-badge&logo=github)](https://github.com/seanpmaxwell/seps/actions/workflows/ci.yml)
 
 Command-line tool to insert separator/header comments in your source files so labels are centered and each line fills up to a character limit.
 
