@@ -1,0 +1,15 @@
+Below is the captured output of a vitest run for a Node/TypeScript project.
+
+Two kinds of problems may appear in it:
+  1. Failing tests (lines starting with "FAIL", and the summary counts).
+  2. Stray console output during tests, shown as "stdout |" or "stderr |"
+     blocks. Application code should log through the project logger, and
+     tests should spy on it, so anything printed here is worth removing.
+
+For each failing test and each console call, list a recommended fix: name what
+the problem is, where it comes from, and the concrete change to make.
+
+Put the finished report in a single markdown fenced block, opened with ```md
+and closed with ```. Everything inside that block is what gets saved to a .md
+file, so it must be the complete report and nothing else. Any thinking or
+commentary must stay outside the block, and no files may be modified.

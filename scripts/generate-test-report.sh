@@ -19,30 +19,15 @@ set -euo pipefail;
 REPORT_FILE="scripts/test-helper.report.tmp.txt";
 RECOMMENDATIONS_FILE="scripts/test-helper.recommended-fixes.tmp.md";
 
-# Model used for the recommendations. Must be a full model name, the shorthand
-# aliases ("opus") always resolve to the latest release instead.
-CLAUDE_MODEL="claude-opus-4-6";
+# The claude runner owns the model and the prompt: it reads its content from
+# tmp/input.txt and writes the answer to tmp/output.txt, both alongside its own
+# script. Paths are relative to the repo root, so this must be run from there.
+CLAUDE_RUNNER_DIR="./scripts/claude-runner";
+CLAUDE_RUNNER="${CLAUDE_RUNNER_DIR}/main.sh";
+CLAUDE_INPUT="${CLAUDE_RUNNER_DIR}/tmp/input.txt";
+CLAUDE_OUTPUT="${CLAUDE_RUNNER_DIR}/tmp/output.txt";
 
-PROMPT="$(
-  cat <<'EOF'
-Below is the captured output of a vitest run for a Node/TypeScript project.
-
-Two kinds of problems may appear in it:
-  1. Failing tests (lines starting with "FAIL", and the summary counts).
-  2. Stray console output during tests, shown as "stdout |" or "stderr |"
-     blocks. Application code should log through the project logger, and
-     tests should spy on it, so anything printed here is worth removing.
-
-For each failing test and each console call, list a recommended fix: name what
-the problem is, where it comes from, and the concrete change to make.
-
-Put the finished report in a single markdown fenced block, opened with ```md
-and closed with ```. Everything inside that block is what gets saved to a .md
-file, so it must be the complete report and nothing else. Any thinking or
-commentary must stay outside the block, and no files may be modified.
-
-EOF
-)";
+CLAUDE_PROMPT_NAME="generate-test-report";
 
 # =========================================================================== #
 #                                    Run                                      #
@@ -112,58 +97,35 @@ if [ "$all_clean" = true ]; then
 fi
 
 # -- Something to report: have Claude recommend fixes -- #
-STATUS_MESSAGE="==> Issues found, generating recommendations";
+echo "==> Issues found, generating recommendations";
 
-if ! command -v claude >/dev/null 2>&1; then
-  echo "$STATUS_MESSAGE";
-  echo "Warning: 'claude' not found on PATH, skipping recommendations." >&2;
-  echo "Report left at: ${REPORT_FILE}" >&2;
-  exit 1;
-fi
+# Hand the report to the runner through its input file. The old output is
+# removed first so a stale answer from an earlier run can never be mistaken for
+# a fresh one if the runner fails.
+cp "$REPORT_FILE" "$CLAUDE_INPUT";
+rm -f "$CLAUDE_OUTPUT";
 
-# Claude takes a while, so run it in the background and tick a seconds counter
-# next to the message while it works. SECONDS is a bash builtin that counts up
-# on its own, so the count stays accurate even if a sleep runs long.
-CLAUDE_OUTPUT_FILE="$(mktemp)";
-SECONDS=0;
-
-claude -p "$PROMPT" --model "$CLAUDE_MODEL" \
-  < "$REPORT_FILE" > "$CLAUDE_OUTPUT_FILE" 2>/dev/null &
-CLAUDE_PID=$!;
-
-if [ -t 1 ]; then
-  # Interactive: redraw the same line so the count ticks over in place.
-  while kill -0 "$CLAUDE_PID" 2>/dev/null; do
-    printf '\r%s (%ds)' "$STATUS_MESSAGE" "$SECONDS";
-    sleep 1;
-  done
-  wait "$CLAUDE_PID" || true;
-  printf '\r%s (%ds)\n' "$STATUS_MESSAGE" "$SECONDS";
-else
-  # Piped or redirected: no cursor to move, so just report the total at the end.
-  echo "$STATUS_MESSAGE";
-  wait "$CLAUDE_PID" || true;
-  echo "${STATUS_MESSAGE} (${SECONDS}s)";
-fi
+bash "$CLAUDE_RUNNER" "$CLAUDE_PROMPT_NAME" || true;
 
 # Keep only what came back inside the ```md fence: anything Claude says around
 # it (preamble, sign-off) is dropped. The block is taken from the opening ```md
 # to the *last* fence in the answer, so code samples fenced inside the report
 # survive intact. If no ```md block came back at all, the whole answer is kept
 # rather than silently writing an empty file.
-awk '
-  { lines[NR] = $0 }
-  /^[[:space:]]*```[[:space:]]*(md|markdown)[[:space:]]*$/ { if (!start) start = NR }
-  /^[[:space:]]*```/ { last = NR }
-  END {
-    if (start && last > start) {
-      for (i = start + 1; i < last; i++) print lines[i];
-    } else {
-      for (i = 1; i <= NR; i++) print lines[i];
+if [ -s "$CLAUDE_OUTPUT" ]; then
+  awk '
+    { lines[NR] = $0 }
+    /^[[:space:]]*```[[:space:]]*(md|markdown)[[:space:]]*$/ { if (!start) start = NR }
+    /^[[:space:]]*```/ { last = NR }
+    END {
+      if (start && last > start) {
+        for (i = start + 1; i < last; i++) print lines[i];
+      } else {
+        for (i = 1; i <= NR; i++) print lines[i];
+      }
     }
-  }
-' "$CLAUDE_OUTPUT_FILE" > "$RECOMMENDATIONS_FILE" || true;
-rm -f "$CLAUDE_OUTPUT_FILE";
+  ' "$CLAUDE_OUTPUT" > "$RECOMMENDATIONS_FILE" || true;
+fi
 
 if [ ! -s "$RECOMMENDATIONS_FILE" ]; then
   echo "Warning: no recommendations were returned." >&2;

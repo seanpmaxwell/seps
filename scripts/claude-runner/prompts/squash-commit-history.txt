@@ -1,0 +1,8 @@
+Below is the staged git diff of a branch against main, about to be committed as
+a single squashed commit representing the whole branch.
+
+Write the commit message for it: a concise imperative subject line of at most
+72 characters, then a blank line, then a short bullet list of the notable
+changes if there is more than one.
+
+Output only the raw commit message. No preamble, no commentary, no code fences.

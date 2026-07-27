@@ -29,17 +29,15 @@ FALLBACK_MESSAGE="squash commit";
 # Cap how much diff text gets sent to Claude.
 MAX_DIFF_CHARS=100000;
 
-PROMPT="$(
-  cat <<'EOF'
-Below is the staged git diff of a branch against main.
+# The claude runner owns the model and the prompt: it reads its content from
+# tmp/input.txt and writes the answer to tmp/output.txt, both alongside its own
+# script. Paths are relative to the repo root, so this must be run from there.
+CLAUDE_RUNNER_DIR="./scripts/claude-runner";
+CLAUDE_RUNNER="${CLAUDE_RUNNER_DIR}/main.sh";
+CLAUDE_INPUT="${CLAUDE_RUNNER_DIR}/tmp/input.txt";
+CLAUDE_OUTPUT="${CLAUDE_RUNNER_DIR}/tmp/output.txt";
 
-Write a git commit message for it: a concise imperative subject line of at most
-72 characters, then a blank line, then a short bullet list of the notable
-changes if there is more than one.
-
-Output only the raw commit message. No preamble, no commentary, no code fences.
-EOF
-)";
+CLAUDE_PROMPT_NAME="squash-commit-history";
 
 # =========================================================================== #
 #                                    Run                                      #
@@ -105,21 +103,23 @@ if git diff --cached --quiet; then
 fi
 
 # -- Ask Claude for a commit message describing the staged changes -- #
-echo "==> Generating commit message with Claude"
+echo "==> Generating commit message"
 
 DIFF_STAT="$(git diff --cached --stat || true)"
 DIFF_BODY="$(git diff --cached | head -c "$MAX_DIFF_CHARS" || true)"
 
+# Hand the diff to the runner through its input file. The old output is removed
+# first so a stale answer from an earlier run can never be mistaken for a fresh
+# one if the runner fails.
+printf '%s\n\n%s\n' "$DIFF_STAT" "$DIFF_BODY" > "$CLAUDE_INPUT";
+rm -f "$CLAUDE_OUTPUT";
+
+bash "$CLAUDE_RUNNER" "$CLAUDE_PROMPT_NAME" || true;
+
 MESSAGE=""
-if command -v claude >/dev/null 2>&1; then
-  MESSAGE="$(
-    printf '%s\n\n%s\n' "$DIFF_STAT" "$DIFF_BODY" |
-      claude -p "$PROMPT" 2>/dev/null || true
-  )"
+if [ -s "$CLAUDE_OUTPUT" ]; then
   # Drop any code fences Claude may wrap the message in, plus blank edges.
-  MESSAGE="$(printf '%s' "$MESSAGE" | sed -e '/^```/d' -e 's/[[:space:]]*$//')";
-else
-  echo "Warning: 'claude' not found on PATH." >&2;
+  MESSAGE="$(sed -e '/^```/d' -e 's/[[:space:]]*$//' "$CLAUDE_OUTPUT")";
 fi
 
 if [ -z "$MESSAGE" ]; then

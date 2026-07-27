@@ -33,7 +33,7 @@
     "git:commit": "bash ./scripts/git-utils/commit.sh",
     "git:squash-history": "bash ./scripts/git-utils/squash-commit-history.sh",
     "git:post-PR-cleanup": "bash ./scripts/git-utils/post-PR-cleanup.sh",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -41,7 +41,7 @@
     "readme:restore": "bash ./scripts/readme.sh restore",
     "prepare": "npm run build",
     "prepublishOnly": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run readme:swap",
-    "postpublish": "npm run readme:restore",
+    "postpack": "npm run readme:restore",
     "test": "vitest run",
     "test:generate-report": "bash ./scripts/generate-test-report.sh",
     "typecheck": "tsc"

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import DefaultConfig from './common/DefaultConfig';
-import { CONFIG_FILE_NAME } from './common/constants';
+import DefaultConfig from './common/constants/DefaultConfig';
+import { CONFIG_FILE_NAME } from './common/constants/misc';
 import customStringifyObject from './common/utils/customStringifyObject';
 import saveJsonFile from './common/utils/saveJsonFile';
 
