@@ -23,11 +23,6 @@ fi
 # Add all files to the commit
 git add -A;
 
-# Exit if no changed files
-if git diff --cached --quiet; then
-  echo "Nothing to commit.";
-fi
-
 # Commit the changes with a timestamp + "# of files changed" message
 TIMESTAMP="$( date +"%Y-%m-%d %H:%M:%S" )";
 FILES_CHANGED="$(git diff --cached --name-only | wc -l | tr -d '[:space:]')";
