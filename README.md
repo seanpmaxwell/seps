@@ -1,6 +1,6 @@
-# seps
+# seps-cli
 
-[![CI](https://github.com/seanpmaxwell/seps/actions/workflows/ci.yml/badge.svg)](https://github.com/seanpmaxwell/seps/actions/workflows/ci.yml)
+[![CI](https://github.com/seanpmaxwell/seps-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/seanpmaxwell/seps-cli/actions/workflows/ci.yml)
 
 Command-line tool to insert separator/header comments in your source files so labels are centered and each line fills up to a character limit.
 
@@ -23,7 +23,7 @@ becomes:
 ## Usage
 
 ```bash
-npx seps [options] [paths...]
+npx seps-cli [options] [paths...]
 ```
 
 If no paths are given, the current directory is walked recursively (skipping `node_modules` and dotfiles).
@@ -38,7 +38,7 @@ If no paths are given, the current directory is walked recursively (skipping `no
 
 ## Markers
 
-Write a marker on its own line and `seps` rewrites it in place:
+Write a marker on its own line and `seps-cli` rewrites it in place:
 
 | Marker          | Result                                       |
 | --------------- | -------------------------------------------- |
@@ -49,7 +49,7 @@ Supported files: JavaScript/TypeScript, Java, CSS/SCSS, C, C++, Go, Rust, PHP, R
 
 ## Terminology
 
-Given the source line `// @sec My Section`, seps produces:
+Given the source line `// @sec My Section`, seps-cli produces:
 
 ```
 // ============== My Section ============== //
@@ -67,7 +67,7 @@ The parts of that output are named as follows:
 
 ## Configuration
 
-`seps` works out of the box — you only need a config file if you want to override the default settings.
+`seps-cli` works out of the box — you only need a config file if you want to override the default settings.
 
 To do so, add a `seps-config.json`. `seps` looks for it in the target path's directory first, then falls back to the directory it is run from (nearest wins — the two are not merged). Any values in it override the corresponding defaults; everything else keeps its default.
 
@@ -130,7 +130,7 @@ Built-in languages and their defaults:
 Rather than writing the file from scratch, you can generate one pre-filled with all the default settings and edit from there:
 
 ```bash
-npx seps init
+npx seps-cli init
 ```
 
 This writes a `seps-config.json` to the current directory (it refuses to overwrite an existing one).
@@ -138,7 +138,7 @@ This writes a `seps-config.json` to the current directory (it refuses to overwri
 ## Programmatic use
 
 ```js
-import insertSeparators from 'seps';
+import insertSeparators from 'seps-cli';
 
 insertSeparators('src');
 ```

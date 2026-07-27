@@ -1,17 +1,17 @@
 {
-  "name": "seps",
+  "name": "seps-cli",
   "version": "1.0.0",
   "description": "Format separator/header comment markers so labels are centered and each line fills up to a character limit.",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/seanpmaxwell/seps.git"
+    "url": "git+https://github.com/seanpmaxwell/seps-cli.git"
   },
-  "homepage": "https://github.com/seanpmaxwell/seps#readme",
-  "bugs": "https://github.com/seanpmaxwell/seps/issues",
+  "homepage": "https://github.com/seanpmaxwell/seps-cli#readme",
+  "bugs": "https://github.com/seanpmaxwell/seps-cli/issues",
   "author": "Sean Maxwell",
   "bin": {
-    "seps": "bin/cli.js"
+    "seps-cli": "bin/cli.js"
   },
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
