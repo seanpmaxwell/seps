@@ -70,7 +70,7 @@ const DefaultConfig = {
     Bookends: ['# ', ' #'],
   },
   Python: {
-    Extensions: ['.py', 'pyi', 'pyw'],
+    Extensions: ['py', 'pyi', 'pyw'],
     Comment: ['# ', ''],
     Bookends: ['# ', ' #'],
   },

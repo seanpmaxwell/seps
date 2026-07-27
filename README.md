@@ -1,5 +1,7 @@
 # seps
 
+[![CI](https://github.com/seanpmaxwell/seps/actions/workflows/ci.yml/badge.svg)](https://github.com/seanpmaxwell/seps/actions/workflows/ci.yml)
+
 Command-line tool to insert separator/header comments in your source files so labels are centered and each line fills up to a character limit.
 
 ## Preview
@@ -121,6 +123,8 @@ Built-in languages and their defaults:
 | `Rust`       | `.rs`                         | `// @reg Label`    | `// ` … ` //` |
 | `Php`        | `.php`                        | `// @reg Label`    | `// ` … ` //` |
 | `Ruby`       | `.rb`                         | `# @reg Label`     | `# ` … ` #`   |
+| `Python`     | `.py .pyi .pyw`               | `# @reg Label`     | `# ` … ` #`   |
+| `Bash`       | `.sh .bash`                   | `# @reg Label`     | `# ` … ` #`   |
 | `Sql`        | `.sql`                        | `-- @reg Label`    | `-- ` … ` --` |
 
 Rather than writing the file from scratch, you can generate one pre-filled with all the default settings and edit from there:

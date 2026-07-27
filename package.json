@@ -1,6 +1,6 @@
 {
   "name": "seps",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Format separator/header comment markers so labels are centered and each line fills up to a character limit.",
   "type": "module",
   "repository": {
@@ -47,7 +47,7 @@
     "typecheck": "tsc"
   },
   "engines": {
-    "node": ">=16"
+    "node": ">=20"
   },
   "keywords": [
     "cli",
